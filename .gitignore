@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+chemflow_output/
+chemflow_templates/
+contoh/
+.cache/
+*.log
