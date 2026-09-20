@@ -47,6 +47,17 @@ protein-ligan.
 | Pengembang | Arif Maulana Azis ([@Arifmaulanaazis](https://github.com/Arifmaulanaazis)) |
 | Repositori | [github.com/Arifmaulanaazis/chemflow](https://github.com/Arifmaulanaazis/chemflow) |
 
+## Dokumentasi
+
+Dokumentasi **chemflow** tersedia dalam format PowerPoint dan PDF untuk memberikan ringkasan mengenai konsep, alur kerja, fitur utama, serta kapabilitas pipeline skrining virtual.
+
+| Format | File | Keterangan |
+|---|---|---|
+| PowerPoint | [`chemflow.pptx`](chemflow.pptx) | Materi presentasi dalam format yang dapat diedit |
+| PDF | [`chemflow.pdf`](chemflow.pdf) | Versi siap dibaca dan didistribusikan |
+
+> **Catatan:** File PDF tersedia sebagai dokumen yang dapat dibuka atau diunduh dari repository. Untuk tampilan presentasi berbasis slide secara langsung, gunakan file PowerPoint.
+
 ## Fitur
 
 - **Preparasi ligan**: SMILES (atau nama senyawa yang dicari otomatis di PubChem)
