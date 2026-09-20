@@ -4,7 +4,7 @@ Excel input hanya berisi nama senyawa tanpa SMILES.
 
 Cache in-memory + retry ringan dengan backoff untuk menangani rate-limit
 PubChem (HTTP 503/429 sering muncul saat query beruntun). Kegagalan resolusi
-satu nama TIDAK menghentikan pipeline. Di terminal interaktif, pengguna
+satu nama tidak menghentikan pipeline. Di terminal interaktif, pengguna
 ditawari mengetik SMILES manual atau melewati senyawa itu (lihat
 ``prompt_manual_smiles``); di luar terminal interaktif, senyawa itu
 langsung dilewati dan dicatat di ringkasan akhir, sisanya tetap diproses.

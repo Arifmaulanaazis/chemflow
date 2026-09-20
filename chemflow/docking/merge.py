@@ -7,8 +7,8 @@ ligan yang tak bentrok dengan reseptor, penggabungan conformer secara
 positional (bukan lewat pencocokan substruktur), dan penyisipan TER
 record pasca-tulis supaya reseptor dan ligan tampil sebagai entitas terpisah.
 
-PENTING: reseptor yang dipakai di sini WAJIB versi
-``ReceptorPreparer.prepare_for_merge()`` (tanpa H/muatan), BUKAN PDBQT
+Penting: reseptor yang dipakai di sini wajib versi
+``ReceptorPreparer.prepare_for_merge()`` (tanpa H/muatan), bukan PDBQT
 hasil ``prepare_for_docking()`` yang sudah ditambah H polar & muatan Kollman.
 """
 

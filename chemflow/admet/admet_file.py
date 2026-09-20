@@ -2,15 +2,18 @@
 Pembaca file hasil ADMETLab3 (CSV/Excel) sebagai pengganti scraping otomatis.
 
 File diunduh pengguna dari situs ADMETLab3 dan dipetakan ke ligan secara
-POSISIONAL: baris ke-N file ADMET adalah ligan ke-N pada file Excel input,
+posisional: baris ke-N file ADMET adalah ligan ke-N pada file Excel input,
 dengan urutan:
 
 - format tidy: baris Excel dari atas ke bawah;
 - format wide: kolom dari kiri ke kanan, tiap kolom dari atas ke bawah.
 
-Jumlah baris file ADMET harus sama dengan jumlah ligan pada input. Jika file
-memuat kolom ``raw_smiles``/``smiles``, isinya dicocokkan dengan SMILES ligan
-sebagai pemeriksaan urutan (ketidakcocokan hanya menghasilkan peringatan).
+Jumlah baris file ADMET harus sama dengan jumlah ligan pada input. Untuk senyawa
+yang muncul di beberapa grup (SMILES sama) file juga boleh memuat SMILES unik
+saja: baris file dipetakan menurut urutan kemunculan pertama, lalu disalin ke
+tiap ligan kembar. Jika file memuat kolom ``raw_smiles``/``smiles``, isinya
+dicocokkan dengan SMILES ligan sebagai pemeriksaan urutan (ketidakcocokan hanya
+menghasilkan peringatan).
 """
 
 from __future__ import annotations
@@ -20,6 +23,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
 import pandas as pd
+
+from chemflow.admet.dedup import group_by_smiles
 
 _CSV_SUFFIXES = {".csv"}
 _EXCEL_SUFFIXES = {".xlsx", ".xlsm"}
@@ -69,28 +74,52 @@ def load_admet_rows(
 
     Returns:
         Satu dict per ligan, berisi ``"ligand"`` dan seluruh kolom file ADMET.
+        Senyawa yang sama di beberapa grup (SMILES sama) mendapat salinan baris yang sama.
 
     Raises:
-        ValueError: jumlah baris file tidak sama dengan jumlah ligan.
+        ValueError: jumlah baris file tidak sama dengan jumlah ligan, maupun dengan
+            jumlah SMILES unik.
     """
     log = logger or logging.getLogger(__name__)
     df = read_admet_table(path)
+    n_ligands = len(ligand_names)
 
-    if len(df) != len(ligand_names):
+    grouping = group_by_smiles(ligand_smiles, ligand_names) if ligand_smiles is not None else None
+    n_unique = len(grouping.unique_smiles) if grouping is not None else n_ligands
+
+    if len(df) == n_ligands:
+        index_of = list(range(n_ligands))
+        compare_names, compare_smiles = ligand_names, ligand_smiles
+    elif grouping is not None and grouping.n_duplicates > 0 and len(df) == n_unique:
+        index_of = grouping.index_of
+        firsts = [members[0] for members in grouping.members]
+        compare_names = [ligand_names[i] for i in firsts]
+        compare_smiles = grouping.unique_smiles
+        log.info(
+            f"File ADMET memuat {len(df)} baris = SMILES unik dari {n_ligands} ligan; hasil disalin ke "
+            f"{grouping.n_duplicates} ligan kembar (senyawa yang sama di beberapa grup)."
+        )
+    else:
+        unique_note = f" ({n_unique} SMILES unik)" if n_unique != n_ligands else ""
         raise ValueError(
             f"File ADMET '{Path(path).name}' berisi {len(df)} baris, sedangkan input memuat "
-            f"{len(ligand_names)} ligan. Jumlah harus sama dan berurutan: format tidy dari atas ke "
-            f"bawah, format wide dari kolom kiri ke kanan (tiap kolom dari atas ke bawah)."
+            f"{n_ligands} ligan{unique_note}. Jumlah baris harus sama dengan jumlah ligan, atau (bila ada "
+            f"senyawa yang muncul di beberapa grup) dengan jumlah SMILES unik, dan berurutan: format tidy "
+            f"dari atas ke bawah, format wide dari kolom kiri ke kanan (tiap kolom dari atas ke bawah)."
         )
 
-    if ligand_smiles is not None:
-        _warn_on_smiles_mismatch(df, ligand_names, ligand_smiles, log)
+    if compare_smiles is not None:
+        _warn_on_smiles_mismatch(df, compare_names, compare_smiles, log)
+
+    source_rows: List[Dict[str, Any]] = []
+    for _, source in df.iterrows():
+        source_rows.append({str(column): (None if pd.isna(value) else value)
+                            for column, value in source.to_dict().items()})
 
     rows: List[Dict[str, Any]] = []
-    for name, (_, source) in zip(ligand_names, df.iterrows()):
+    for name, position in zip(ligand_names, index_of):
         record: Dict[str, Any] = {"ligand": name}
-        for column, value in source.to_dict().items():
-            record[str(column)] = None if pd.isna(value) else value
+        record.update(source_rows[position])
         rows.append(record)
 
     log.info(f"ADMET dimuat dari file '{Path(path).name}': {len(rows)} ligan.")

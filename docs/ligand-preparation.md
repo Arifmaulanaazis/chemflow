@@ -9,7 +9,7 @@ minimisasi, bukan dari konformasi 3D yang sudah dioptimasi.
 flowchart TD
     Start([Mulai: nama senyawa dan SMILES]) --> Parse[Chem.MolFromSmiles]
     Parse --> Valid{SMILES valid?}
-    Valid -->|Tidak| Fail[["raise ValueError, ligan ditandai GAGAL, lanjut ligan lain"]]
+    Valid -->|Tidak| Fail[["raise ValueError, ligan ditandai gagal, lanjut ligan lain"]]
     Valid -->|Ya| Image{generate_2d_image?}
     Image -->|Ya| Draw[Compute2DCoords + MolDraw2DCairo, fallback PIL, simpan PNG]
     Image -->|Tidak| Strip
@@ -27,7 +27,7 @@ flowchart TD
     MmffOk -->|Tidak| Uff
     Uff --> Gasteiger[ComputeGasteigerCharges]
     Gasteiger --> WritePdb[Tulis PDB: mol_to_pdb]
-    WritePdb --> Obabel[["OpenBabel: obabel -i pdb ... -o pdbqt -O out -h"]]
+    WritePdb --> Obabel[["OpenBabel: obabel -i pdb ... -o pdbqt -O out -h --partialcharge gasteiger"]]
     Obabel --> ObabelOk{Output PDBQT kosong atau exit != 0?}
     ObabelOk -->|Ya| FailObabel[["raise ValueError, dump stdout/stderr ke log"]]
     ObabelOk -->|Tidak| End([Selesai: LigandPrepResult])
@@ -42,9 +42,11 @@ Catatan penting:
   ditangani. `unique_safe_names` menjamin nama unik lintas seluruh ligan, dan
   `LigandRecord.safe_name` membawanya ke semua tahap. Panjang nama menyesuaikan
   panjang folder output agar path tetap di bawah 260 karakter di Windows.
-- `-h` pada OpenBabel memicu penghitungan ulang muatan Gasteiger dan
-  pembangunan pohon torsi (ROOT/BRANCH/ENDBRANCH/TORSDOF) secara internal
-  saat menulis PDBQT ligan.
+- OpenBabel membangun pohon torsi (ROOT/BRANCH/ENDBRANCH/TORSDOF) saat menulis
+  PDBQT ligan, dan `--partialcharge gasteiger` mengisi kolom muatan parsial PDBQT
+  dengan muatan Gasteiger (tanpa opsi itu kolomnya bernilai 0.000). Fungsi skor Vina
+  tidak memakai muatan parsial ligan, jadi afinitas dan pose tidak berubah; muatan
+  itu berguna untuk alat lain yang membaca PDBQT (mis. AutoDock4).
 - OpenBabel bisa keluar dengan exit code 0 walau gagal diam-diam, sehingga
   ukuran file output ikut divalidasi, bukan hanya exit code.
 - Setiap tahap mencatat kegagalan sebagai warning dan, kecuali tahap yang

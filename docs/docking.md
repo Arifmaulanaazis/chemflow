@@ -58,3 +58,32 @@ Jika kosong, pipeline meminta pengguna memilih ligan native saat run
 berjalan. Pengguna yang belum tahu koordinatnya dapat menyusun Excel itu
 lebih dulu dengan `chemflow receptor-config`
 (lihat [Konfigurasi Reseptor Interaktif](receptor-config.md)).
+
+### Ukuran default dari ligan native
+
+Ukuran yang tidak diberikan diturunkan dari ligan native, bukan angka tetap.
+`GridBox.suggested_size(extent, padding=8, min_size=18, max_size=30)` menghasilkan
+sisi kubus: ekstensi terpanjang native (`NativeLigand.extent`) ditambah padding
+(`--box-padding`, default 8 Angstrom), minimal 18, dibulatkan ke atas, maksimal 30.
+Aturan yang sama dipakai `receptor-config`.
+
+Urutan penentuan ukuran per sumbu:
+
+1. kolom `size_x/y/z` di Excel;
+2. kolom ukuran seragam (`gridbox` atau `box_size`);
+3. ukuran dari ligan native (interaktif: ligan yang dipilih, Enter menerima; jalur
+   Excel dengan pusat tanpa ukuran: native terdekat dengan jarak pusat paling jauh
+   `native_match_radius`, default 8 Angstrom);
+4. `default_box_size` (default 20), cadangan bila struktur tidak punya native.
+
+Log mencatat ukuran dan sumbernya. Saat memilih ligan interaktif, tabel menampilkan
+kolom "Kotak" (ukuran default tiap ligan) dan jawaban `n` membuka prompt ukuran yang
+menerima satu angka (kubus) atau tiga angka `x y z`.
+
+## Checkpoint per run
+
+`run_matrix(..., resume=False)` menulis `rep<NN>.json` (seed, pose, error, path relatif)
+di samping keluaran Vina setiap kali satu run selesai, sukses maupun gagal.
+Dengan `resume=True`, run yang sukses dan PDBQT keluarannya masih ada dimuat
+(`DockingRunResult.reused = True`, seed asli dipertahankan) tanpa menjalankan Vina;
+yang gagal, rusak, atau tak punya checkpoint dijalankan ulang.

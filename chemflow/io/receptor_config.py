@@ -13,17 +13,16 @@ import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Sequence, Tuple, Union
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 
-from chemflow.docking.grid_box import GridBox
+from chemflow.docking.grid_box import GridBox, parse_box_size
 from chemflow.io.pdb_fetcher import FetchedReceptor, NativeLigand, fetch_pdb
 from chemflow.utils.excel_utils import BODY_FONT, autofit_worksheet, style_header
 
 PDB_CODE_PATTERN = re.compile(r"^[0-9][A-Za-z0-9]{3}$")
-MAX_BOX_SIZE = 30.0
 MANUAL_BOX_SIZE = 20.0
 DEFAULT_FILENAME = "reseptor.xlsx"
 SHEET_NAME = "Reseptor"
@@ -46,8 +45,7 @@ class ReceptorConfigRow:
 
 def suggest_box_size(ligand: NativeLigand) -> float:
     """Sisi kubus (Angstrom) yang memuat ligan beserta ruang gerak, dibulatkan ke atas, maksimum 30."""
-    box = GridBox.cube_for_extent(ligand.center_x, ligand.center_y, ligand.center_z, ligand.extent)
-    return float(min(math.ceil(box.size_x), MAX_BOX_SIZE))
+    return GridBox.suggested_size(ligand.extent)
 
 
 def parse_pdb_codes(text: str) -> Tuple[List[str], List[str]]:
@@ -77,22 +75,6 @@ def parse_ligand_choice(text: str, count: int) -> Choice:
     if any(n < 1 or n > count for n in numbers):
         return None
     return numbers
-
-
-def parse_box_size(text: str, default: float) -> Optional[Tuple[float, float, float]]:
-    """Tafsirkan ukuran kotak: kosong memakai ``default``, satu angka untuk kubus, tiga angka untuk x y z."""
-    tokens = text.split()
-    if not tokens:
-        return (default, default, default)
-    try:
-        values = [float(t.replace(",", ".")) for t in tokens]
-    except ValueError:
-        return None
-    if len(values) == 1:
-        values = values * 3
-    if len(values) != 3 or any(not math.isfinite(v) or v <= 0 for v in values):
-        return None
-    return (values[0], values[1], values[2])
 
 
 def write_receptor_config(rows: Sequence[ReceptorConfigRow], path: "str | Path") -> Path:

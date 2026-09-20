@@ -104,3 +104,109 @@ def test_pca_numpy_fallback_konsisten_dgn_sklearn():
 
     assert evr_sklearn[0] == pytest.approx(evr_numpy[0], abs=1e-6)
     assert evr_sklearn[2] == pytest.approx(evr_numpy[2], abs=1e-6)
+
+
+def _series_data():
+    rng = np.random.default_rng(3)
+    matrix, labels, groups, series = [], [], [], []
+    for cls, offset in (("Asli", 0.0), ("Tiruan", 3.0)):
+        for ser, shift in (("Aquatic", 0.0), ("Citrus", 1.5)):
+            for i in range(4):
+                matrix.append(list(rng.normal(offset + shift, 0.4, 5)))
+                labels.append(f"{ser[0]}{cls[0]}{i}")
+                groups.append(cls)
+                series.append(ser)
+    return matrix, [f"f{i}" for i in range(5)], labels, groups, series
+
+
+def test_seri_menjadi_warna_dan_kelas_menjadi_penanda(tmp_path):
+    matrix, features, labels, groups, series = _series_data()
+    pca = ChemometricPCA()
+    result = pca.compute(matrix, features, labels, groups, series=series)
+    assert result.series == series and result.color_keys == series
+    assert pca.plot_2d(result, tmp_path / "s2.png").stat().st_size > 0
+    assert pca.plot_3d(result, tmp_path / "s3.png").stat().st_size > 0
+
+
+def test_tanpa_seri_warna_mengikuti_kelas():
+    matrix, features, labels, groups, _ = _series_data()
+    result = ChemometricPCA().compute(matrix, features, labels, groups)
+    assert result.series == [] and result.color_keys == groups
+
+
+def test_panjang_series_harus_sama():
+    matrix, features, labels, groups, series = _series_data()
+    with pytest.raises(ValueError, match="Panjang"):
+        ChemometricPCA().compute(matrix, features, labels, groups, series=series[:-1])
+
+
+@pytest.mark.parametrize("method", ["auto", "pareto", "center"])
+def test_metode_penskalaan_menghasilkan_matriks_berpusat(method):
+    from chemflow.analytics.pca import scale_matrix
+
+    X = np.array([[1.0, 100.0], [2.0, 300.0], [3.0, 200.0], [4.0, 400.0]])
+    scaled = scale_matrix(X, method)
+    assert np.allclose(scaled.mean(axis=0), 0.0)
+    if method == "auto":
+        assert np.allclose(scaled.std(axis=0), 1.0)
+    if method == "center":
+        assert np.allclose(scaled, X - X.mean(axis=0))
+
+
+def test_penskalaan_tidak_dikenal_ditolak():
+    from chemflow.analytics.pca import scale_matrix
+
+    with pytest.raises(ValueError, match="penskalaan"):
+        scale_matrix(np.ones((3, 2)), "log")
+
+
+def test_kolom_konstan_tidak_menghasilkan_nan():
+    from chemflow.analytics.pca import scale_matrix
+
+    X = np.array([[1.0, 5.0], [2.0, 5.0], [3.0, 5.0]])
+    assert np.all(np.isfinite(scale_matrix(X, "auto")))
+
+
+def test_elips_kepercayaan_mencakup_sebaran():
+    from chemflow.analytics.pca import confidence_ellipse
+
+    rng = np.random.default_rng(0)
+    points = rng.normal(0, 1, (400, 2)) * [3.0, 1.0]
+    center, width, height, angle = confidence_ellipse(points)
+    assert width > height
+    assert np.allclose(center, points.mean(axis=0))
+    assert confidence_ellipse(points[:2]) is None
+
+
+def test_cincin_3d_berada_di_sekitar_pusat():
+    from chemflow.analytics.pca import confidence_ring_3d
+
+    rng = np.random.default_rng(1)
+    points = rng.normal(0, 1, (50, 3))
+    ring = confidence_ring_3d(points)
+    assert ring.shape == (100, 3)
+    assert np.allclose(ring.mean(axis=0), points.mean(axis=0), atol=0.05)
+    assert confidence_ring_3d(points[:2]) is None
+
+
+def test_elips_sewarna_penanda_tanpa_seri_dan_abu_abu_bergaris_dengan_seri():
+    matrix, features, labels, groups, series = _series_data()
+    engine = ChemometricPCA()
+    plain = engine.compute(matrix, features, labels, groups)
+    from chemflow.analytics.style import group_colors
+
+    colors = group_colors(sorted(set(plain.color_keys)))
+    styles = ChemometricPCA._ellipse_styles(plain, sorted(set(groups)), colors)
+    assert all(style == (colors[g], "-") for g, style in styles.items())
+    with_series = engine.compute(matrix, features, labels, groups, series=series)
+    styles = ChemometricPCA._ellipse_styles(with_series, sorted(set(groups)), colors)
+    assert {color for color, _ in styles.values()} == {"#333333"}
+    assert len({line for _, line in styles.values()}) == 2
+
+
+def test_label_sumbu_bergaya_jurnal():
+    matrix, labels, groups = _synthetic_matrix()
+    result = ChemometricPCA().compute(matrix, ["f1", "f2", "f3"], labels, groups)
+    label = ChemometricPCA._axis_label(result, 0)
+    assert label.startswith("PC1 (") and label.endswith(" %)")
+    assert len(label.split("(")[1].split(".")[1].split(" ")[0]) == 2

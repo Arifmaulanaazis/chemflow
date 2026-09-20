@@ -11,8 +11,8 @@ Kolom yang tidak ada di ``RULES`` diperlakukan ``Flag.NA`` tanpa error,
 sehingga perubahan penamaan kolom di sisi ADMETLab3 tidak menggagalkan
 ekspor; cukup tambahkan atau sesuaikan entri sesuai header CSV terbaru.
 
-Ambang mengikuti dokumentasi ADMETLab3 (Xiong et al. 2021, Nucleic Acids
-Research; admetlab3.scbdd.com). Kolom probabilitas memakai pita 0-0,3 /
+Ambang mengikuti dokumentasi ADMETLab3 (Fu et al. 2024, Nucleic Acids
+Research 52(W1):W422-W431; admetlab3.scbdd.com). Kolom probabilitas memakai pita 0-0,3 /
 0,3-0,7 / 0,7-1,0.
 """
 
@@ -55,7 +55,7 @@ CATEGORIES = [
     CAT_METABOLISM, CAT_EXCRETION, CAT_TOXICITY,
 ]
 
-EXCLUDED_COLUMNS = frozenset({"raw_smiles", "smiles", "molstr", "ligand", "ligand_name", "ligand_code"})
+EXCLUDED_COLUMNS = frozenset({"raw_smiles", "smiles", "molstr", "ligand", "ligand_name", "ligand_code", "group"})
 
 FLAG_SCORE = {Flag.GREEN: 1.0, Flag.YELLOW: 0.5, Flag.RED: 0.0}
 

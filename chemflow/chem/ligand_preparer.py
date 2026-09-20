@@ -1,7 +1,7 @@
 """
 Preparasi ligan lengkap: dari SMILES sampai PDBQT siap docking.
 
-Urutan tahap (gambar 2D diambil SEBELUM minimisasi, dari mol 2D asli hasil
+Urutan tahap (gambar 2D diambil sebelum minimisasi, dari mol 2D asli hasil
 parsing SMILES, bukan dari konformasi 3D yang sudah dioptimasi):
 
     SMILES -> mol 2D -> gambar 2D (PNG)
@@ -10,13 +10,14 @@ parsing SMILES, bukan dari konformasi 3D yang sudah dioptimasi):
            -> embed 3D
            -> minimisasi MMFF94 (fallback UFF jika parameter MMFF94 tak
               tersedia untuk elemen dalam molekul)
-           -> hitung muatan Gasteiger
-           -> tulis PDB -> konversi PDBQT via OpenBabel (obabel -h;
-              OpenBabel menghitung ulang muatan Gasteiger + membangun
-              pohon torsi ligan secara internal saat menulis PDBQT)
+           -> hitung muatan Gasteiger (pada objek RDKit)
+           -> tulis PDB -> konversi PDBQT via OpenBabel (obabel -h
+              --partialcharge gasteiger; OpenBabel menghitung muatan
+              Gasteiger untuk kolom muatan PDBQT dan membangun pohon torsi
+              ligan; Vina sendiri tidak memakai muatan parsial ligan)
 
 Setiap tahap mencatat kegagalan sebagai warning dan, kecuali untuk tahap
-yang benar-benar fatal (parsing SMILES gagal), TIDAK menghentikan seluruh
+yang benar-benar fatal (parsing SMILES gagal), tidak menghentikan seluruh
 pipeline untuk satu ligan yang bermasalah; ligan itu ditandai gagal dan
 ligan lain tetap diproses.
 """

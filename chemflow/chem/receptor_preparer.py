@@ -1,17 +1,17 @@
 """
-Preparasi reseptor protein. Dua jalur keluaran yang SENGAJA dipisah total:
+Preparasi reseptor protein. Dua jalur keluaran yang sengaja dipisah total:
 
   - ``prepare_for_docking()``: hidrogen polar-only + muatan Kollman + tipe
     atom AD4 -> PDBQT rigid, dipakai Vina.
-  - ``prepare_for_merge()``: reseptor BERSIH (tanpa H, tanpa muatan) -> PDB
-    polos, dipakai HANYA untuk menggabungkan pose terbaik + reseptor saat
+  - ``prepare_for_merge()``: reseptor bersih (tanpa H, tanpa muatan) -> PDB
+    polos, dipakai hanya untuk menggabungkan pose terbaik + reseptor saat
     visualisasi kompleks (``docking/merge.py``). Reseptor versi docking
-    (sudah ada H & muatan) TIDAK BOLEH dipakai untuk merge, karena itu akan
+    (sudah ada H & muatan) tidak boleh dipakai untuk merge, karena itu akan
     membuat file kompleks berisi H/muatan tambahan yang tidak semestinya
     ditampilkan sebagai struktur "asli" ke pengguna.
 
 Residu HETATM yang struktural bagian dari backbone protein (asam amino
-termodifikasi, mis. MSE) SELALU dipertahankan lewat pengecekan
+termodifikasi, mis. MSE) selalu dipertahankan lewat pengecekan
 ``is_polymer_backbone_complete``, bukan daftar nama hardcode, supaya
 tidak ikut terhapus walau ``remove_hetero_ligands=True``.
 """
@@ -95,7 +95,7 @@ class ReceptorPreparer:
         remove_hetero_ligands: bool = True,
         keep_metals: bool = True,
     ) -> Path:
-        """Siapkan reseptor BERSIH (tanpa H, tanpa muatan) untuk penggabungan
+        """Siapkan reseptor bersih (tanpa H, tanpa muatan) untuk penggabungan
         kompleks (``docking/merge.py``).
 
         Returns:
@@ -154,7 +154,7 @@ class ReceptorPreparer:
 
 
     def _clean(self, mol: Any, remove_waters: bool, remove_hetero_ligands: bool, keep_metals: bool) -> Any:
-        """Buang air & HETATM ligan asli, PERTAHANKAN residu nonstandar yang
+        """Buang air & HETATM ligan asli, pertahankan residu nonstandar yang
         secara struktural bagian dari backbone protein (mis. MSE)."""
         from rdkit import Chem
 

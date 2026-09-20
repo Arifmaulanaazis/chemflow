@@ -1,6 +1,7 @@
 rdkit>=2023.9.1
 pandas>=2.0.0
 openpyxl>=3.1.0
+xlrd>=2.0.1
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 lxml>=4.9.0
@@ -10,6 +11,11 @@ matplotlib>=3.7.0
 numpy>=1.24.0
 scipy>=1.10.0
 tqdm>=4.66.0
+
+# Ekspor interaksi otomatis dari BIOVIA Discovery Studio (hanya Windows)
+psutil>=5.9; sys_platform == "win32"
+pywinauto>=0.6.8; sys_platform == "win32"
+pyperclip>=1.8; sys_platform == "win32"
 
 # Testing
 pytest>=7.4.0

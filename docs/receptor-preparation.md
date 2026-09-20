@@ -41,7 +41,7 @@ flowchart TD
     AD4Type --> WritePdbqt[ReceptorPDBQTWriter: ATOM/HETATM flat + kolom charge dan tipe AD4, TER per chain]
     WritePdbqt --> EndA([receptor_docking.pdbqt])
 
-    BranchB --> StripAllH[Hapus SEMUA atom H]
+    BranchB --> StripAllH[Hapus semua atom H]
     StripAllH --> ClearCharge[Clear formal charge dan prop muatan]
     ClearCharge --> WritePdb[Chem.MolToPDBFile]
     WritePdb --> EndB([receptor_clean.pdb, khusus untuk merge])

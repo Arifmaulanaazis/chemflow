@@ -112,7 +112,32 @@ def read_ligands(
         f"[Ligan] {len(records)} senyawa dimuat "
         f"({n_missing_smiles} perlu resolusi PubChem, {n_groups} kelompok terdeteksi)."
     )
+    _log_multi_group(records, log)
     return records
+
+
+def multi_group_compounds(records: List[LigandRecord]) -> dict:
+    """Senyawa yang muncul di lebih dari satu grup: ``{nama: [grup, ...]}`` (nama tanpa beda huruf besar/kecil)."""
+    groups_by_name: dict = {}
+    display: dict = {}
+    for r in records:
+        key = r.name.casefold()
+        display.setdefault(key, r.name)
+        groups_by_name.setdefault(key, []).append(r.group or "tanpa grup")
+    return {display[k]: g for k, g in groups_by_name.items() if len(g) > 1 and len(set(g)) > 1}
+
+
+def _log_multi_group(records: List[LigandRecord], log: logging.Logger) -> None:
+    multi = multi_group_compounds(records)
+    if not multi:
+        return
+    preview = "; ".join(f"{name} ({', '.join(groups)})" for name, groups in list(multi.items())[:5])
+    if len(multi) > 5:
+        preview += f"; ... dan {len(multi) - 5} lainnya"
+    log.info(
+        f"[Ligan] {len(multi)} senyawa muncul di lebih dari satu grup: {preview}. Tiap grup diproses sebagai "
+        f"ligan terpisah; prediksi ADMET dilakukan sekali per SMILES lalu disalin ke tiap grup."
+    )
 
 
 def _read_tidy(

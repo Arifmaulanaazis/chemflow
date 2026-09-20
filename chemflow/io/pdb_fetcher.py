@@ -19,12 +19,13 @@ from typing import Dict, List, Optional, Tuple
 
 import requests
 
+from chemflow.docking.grid_box import GridBox, parse_box_size
 from chemflow.utils.residue_backbone import is_polymer_backbone_complete
 
 RCSB_DOWNLOAD_URL = "https://files.rcsb.org/download/{pdb_code}.pdb"
 _PDB_CODE = re.compile(r"[0-9A-Z]{4}")
 
-# Residu yang jelas BUKAN kandidat ligan (pelarut, aditif kristalisasi, ion umum).
+# Residu yang jelas bukan kandidat ligan (pelarut, aditif kristalisasi, ion umum).
 _SOLVENT_RESNAMES = {
     "HOH", "WAT", "DOD", "H2O", "EDO", "GOL", "DMS",
     "SO4", "PO4", "ACT", "ACE", "MES", "TRS", "EPE",
@@ -60,7 +61,7 @@ class NativeLigand:
 
     def to_pdb_block(self) -> str:
         """Blok PDB minimal (ATOM/HETATM + END) untuk residu ini saja,
-        dipakai sebagai referensi kristalografi pada validasi RMSD, TANPA
+        dipakai sebagai referensi kristalografi pada validasi RMSD, tanpa
         modifikasi apa pun (tidak diminimisasi, tidak ditambah H)."""
         return "".join(self.atom_lines) + "END\n"
 
@@ -161,12 +162,17 @@ def _parse_native_ligands(pdb_path: Path) -> List[NativeLigand]:
 def interactive_select_native_ligand(
     receptor: FetchedReceptor,
     default_size: Tuple[float, float, float] = (20.0, 20.0, 20.0),
+    padding: float = 8.0,
 ) -> Tuple[float, float, float, float, float, float, Optional[NativeLigand]]:
     """Prompt TTY interaktif untuk memilih ligan native sebagai pusat gridbox.
 
     Dipanggil hanya ketika Excel reseptor tidak menyediakan koordinat
     gridbox eksplisit. Pilihan ini juga menentukan ligan mana yang dipakai
     untuk validasi RMSD redocking (jika diaktifkan).
+
+    Ukuran default kotak diturunkan dari ligan native yang dipilih (kubus:
+    ekstensi native + ``padding``, lihat ``GridBox.suggested_size``). ``default_size``
+    hanya dipakai bila tak ada native (koordinat manual).
 
     Returns:
         ``(cx, cy, cz, sx, sy, sz, ligan_terpilih_atau_None)``.
@@ -179,25 +185,26 @@ def interactive_select_native_ligand(
             "Pemilihan gridbox interaktif diminta, tapi tidak ada terminal interaktif "
             "(stdin non-TTY). Sediakan koordinat gridbox eksplisit di Excel reseptor."
         )
-    sx, sy, sz = default_size
     ligands = receptor.native_ligands
 
     print(f"\n  === Pemilihan Gridbox: Reseptor {receptor.pdb_code} ===")
     if not ligands:
         print(f"  [!] Tidak ada ligan native terdeteksi di {receptor.pdb_code}.pdb")
-        return _prompt_manual(sx, sy, sz)
+        return _prompt_manual(default_size)
 
-    header = f"{'No':>3}  {'Chain':>5}  {'Residu':>8}  {'ResNum':>6}  {'Atom':>5}  {'X':>9}  {'Y':>9}  {'Z':>9}"
+    header = (f"{'No':>3}  {'Chain':>5}  {'Residu':>8}  {'ResNum':>6}  {'Atom':>5}  "
+              f"{'X':>9}  {'Y':>9}  {'Z':>9}  {'Kotak':>6}")
     print(f"  {header}\n  {'-' * len(header)}")
     for i, lig in enumerate(ligands, start=1):
         print(f"  {i:>3}  {lig.chain:>5}  {lig.resname:>8}  {lig.resnum:>6}  "
-              f"{lig.atom_count:>5}  {lig.center_x:>9.3f}  {lig.center_y:>9.3f}  {lig.center_z:>9.3f}")
+              f"{lig.atom_count:>5}  {lig.center_x:>9.3f}  {lig.center_y:>9.3f}  {lig.center_z:>9.3f}  "
+              f"{GridBox.suggested_size(lig.extent, padding):>6.0f}")
     print(f"  {'m':>3}  -> masukkan koordinat manual")
 
     while True:
         raw = input(f"  Pilih nomor ligan [1-{len(ligands)} / m]: ").strip()
         if raw.lower() == "m":
-            return _prompt_manual(sx, sy, sz)
+            return _prompt_manual(default_size)
         try:
             idx = int(raw)
         except ValueError:
@@ -206,25 +213,35 @@ def interactive_select_native_ligand(
         if 1 <= idx <= len(ligands):
             lig = ligands[idx - 1]
             print(f"  [OK] Dipilih: {lig.label} -> pusat ({lig.center_x}, {lig.center_y}, {lig.center_z})")
-            ans = input(f"       Pakai ukuran default {sx}x{sy}x{sz} A? [Y/n]: ").strip().lower()
+            side = GridBox.suggested_size(lig.extent, padding)
+            ans = input(
+                f"       Pakai ukuran {side:g} A (ekstensi native {lig.extent:.1f} A + padding {padding:g} A)? [Y/n]: "
+            ).strip().lower()
+            size = (side, side, side)
             if ans in ("n", "no"):
-                sx, sy, sz = _prompt_size()
-            return lig.center_x, lig.center_y, lig.center_z, sx, sy, sz, lig
+                size = _prompt_size(size)
+            return lig.center_x, lig.center_y, lig.center_z, *size, lig
         print(f"  [!] Masukkan angka 1-{len(ligands)} atau 'm'.")
 
 
-def _prompt_manual(sx: float, sy: float, sz: float):
+def _prompt_manual(default_size: Tuple[float, float, float]):
     cx = _prompt_float("  Center X: ")
     cy = _prompt_float("  Center Y: ")
     cz = _prompt_float("  Center Z: ")
-    ans = input(f"  Pakai ukuran default {sx}x{sy}x{sz} A? [Y/n]: ").strip().lower()
+    sx, sy, sz = default_size
+    ans = input(f"  Pakai ukuran default {sx:g}x{sy:g}x{sz:g} A? [Y/n]: ").strip().lower()
     if ans in ("n", "no"):
-        sx, sy, sz = _prompt_size()
+        sx, sy, sz = _prompt_size(default_size)
     return cx, cy, cz, sx, sy, sz, None
 
 
-def _prompt_size():
-    return _prompt_float("  Size X: "), _prompt_float("  Size Y: "), _prompt_float("  Size Z: ")
+def _prompt_size(default: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    """Minta ukuran kotak: satu angka (kubus) atau tiga angka x y z; Enter memakai ``default``."""
+    while True:
+        size = parse_box_size(input("  Ukuran x y z dalam A (satu angka untuk kubus, Enter = default): "), default[0])
+        if size is not None:
+            return size
+        print("  [!] Masukkan satu atau tiga angka positif.")
 
 
 def _prompt_float(prompt: str) -> float:

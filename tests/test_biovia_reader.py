@@ -143,3 +143,48 @@ def test_filter_protein_ligand_sisi_ligan_bisa_dari_atau_ke():
     assert len(contacts) == 1
     assert contacts[0].resname == "ALA"
     assert contacts[0].resnum == 50
+
+
+def test_parse_atom_spec_interaksi_pi_tanpa_nama_atom():
+    spec = parse_atom_spec("A:PHE330")
+    assert (spec.chain, spec.resname, spec.resnum, spec.atom_name) == ("A", "PHE", 330, "")
+
+
+def test_read_biovia_interactions_kolom_dicari_lewat_judul(tmp_path):
+    """Urutan dan kolom tambahan bebas selama judul From, To, Category, Types ada."""
+    path = tmp_path / "interaksi.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["Distance", "To", "From", "Types", "Category", "To Chemistry", "From Chemistry", "Name"])
+    ws.append([2.9, "X:LIG1:O8", "A:SER195:OG", "Conventional Hydrogen Bond", "Hydrogen Bond",
+               "H-Acceptor", "H-Donor", "x"])
+    wb.save(path)
+
+    (interaction,) = read_biovia_interactions(path)
+    assert interaction.from_spec.resname == "SER" and interaction.to_spec.chain == "X"
+    assert (interaction.category, interaction.type_subtype) == ("Hydrogen Bond", "Conventional Hydrogen Bond")
+    assert (interaction.from_chemistry, interaction.to_chemistry) == ("H-Donor", "H-Acceptor")
+
+
+def test_read_biovia_interactions_hanya_judul_berarti_tanpa_interaksi(tmp_path):
+    path = tmp_path / "interaksi.xlsx"
+    _write_biovia_excel(path, [], with_header=True)
+    assert read_biovia_interactions(path) == []
+
+
+def test_read_biovia_interactions_satu_baris_bukan_judul_dan_bukan_data_tetap_raise(tmp_path):
+    path = tmp_path / "interaksi.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"])
+    wb.save(path)
+    with pytest.raises(ValueError, match="Format spek atom"):
+        read_biovia_interactions(path)
+
+
+def test_interaksi_pi_ikut_terhitung_sebagai_kontak_protein(tmp_path):
+    path = tmp_path / "interaksi.xlsx"
+    rows = [_row("X:LIG1:C1", "C-H", "A:PHE330", "Pi-Orbitals", category="Hydrophobic", type_subtype="Pi-Sigma")]
+    _write_biovia_excel(path, rows)
+    (contact,) = filter_protein_ligand(read_biovia_interactions(path), ligand_chain="X")
+    assert (contact.resnum, contact.resname, contact.interaction_type) == (330, "PHE", "Pi-Sigma")

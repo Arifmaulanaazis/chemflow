@@ -22,7 +22,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
 
-from chemflow.analytics.style import FIG_DPI, PALETTE, chart_style, clean_axes, save_figure
+from chemflow.analytics.paging import paged_name, paginate
+from chemflow.analytics.style import DEFAULT_MAX_ROWS, FIG_DPI, chart_style, clean_axes, group_colors, save_figure
 
 
 @dataclass
@@ -95,47 +96,65 @@ class HierarchicalClustering:
         color_by_group: bool = True,
         dpi: int = FIG_DPI,
         formats: Sequence[str] = ("png",),
-    ) -> Path:
+        max_leaves: Optional[int] = DEFAULT_MAX_ROWS,
+    ) -> List[Path]:
         """Dendrogram HCA dengan label daun diwarnai per kelompok sumber.
+
+        Bila daun lebih banyak dari ``max_leaves``, dendrogram dipotong menjadi beberapa gambar.
+        Tiap gambar adalah jendela daun dari dendrogram penuh yang sama (tinggi sumbu jarak
+        sama), jadi garis yang melintas ke bagian lain terpotong tapi struktur klasternya utuh.
 
         Args:
             result: hasil ``compute()``.
-            output_path: path PNG keluaran.
+            output_path: path PNG keluaran (bagian ke-n diberi akhiran ``_partNNofMM``).
             title: judul grafik.
             color_by_group: warnai label daun sesuai kelompok (butuh ``result.groups`` terisi).
             dpi: resolusi gambar.
             formats: format tambahan yang ditulis berdampingan (``svg``, ``pdf``).
+            max_leaves: jumlah daun maksimum per gambar; ``None``/0 berarti tidak dipotong.
 
         Returns:
-            Path PNG yang ditulis.
+            Daftar path PNG yang ditulis.
         """
+        output_path = Path(output_path)
         with chart_style():
-            fig, ax = plt.subplots(figsize=(max(7.5, 0.45 * len(result.labels) + 2), 5.8))
-            dendrogram(
-                result.linkage_matrix, labels=result.labels, ax=ax,
-                leaf_rotation=60, leaf_font_size=9, color_threshold=0, above_threshold_color="#444444",
-            )
-            for label in ax.get_xticklabels():
-                label.set_ha("right")
-                label.set_rotation_mode("anchor")
+            leaves = dendrogram(result.linkage_matrix, no_plot=True)["leaves"]
+            ordered_labels = [result.labels[i] for i in leaves]
 
+            color_map, group_by_label = {}, {}
             if color_by_group and result.groups:
-                unique_groups = sorted(set(result.groups))
-                color_map = {g: PALETTE[i % len(PALETTE)] for i, g in enumerate(unique_groups)}
+                color_map = group_colors(sorted(set(result.groups)))
                 group_by_label = dict(zip(result.labels, result.groups))
-                for tick_label in ax.get_xticklabels():
-                    group = group_by_label.get(tick_label.get_text())
-                    if group is not None:
-                        tick_label.set_color(color_map[group])
-                        tick_label.set_fontweight("bold")
-                handles = [plt.Line2D([0], [0], marker="s", linestyle="", markersize=8,
-                                      color=color_map[g], label=g) for g in unique_groups]
-                ax.legend(handles=handles, title="Kelompok", loc="upper right")
 
-            ax.set_title(title)
-            ax.set_ylabel("Jarak (Ward, Euclidean)")
-            clean_axes(ax, grid_axis="y")
-            return save_figure(fig, output_path, dpi=dpi, formats=formats)
+            paths: List[Path] = []
+            for page in paginate(len(ordered_labels), max_leaves):
+                fig, ax = plt.subplots(figsize=(max(7.5, 0.45 * page.count + 2), 5.8))
+                dendrogram(
+                    result.linkage_matrix, ax=ax, no_labels=True, color_threshold=0,
+                    above_threshold_color="#444444",
+                )
+                # Daun ke-k berada di posisi 10k+5, jadi jendela [a, b) = [10a, 10b].
+                ax.set_xlim(10 * page.start, 10 * page.stop)
+                ax.set_xticks([10 * k + 5 for k in range(page.start, page.stop)])
+                ticks = ax.set_xticklabels(page.slice(ordered_labels), rotation=60, ha="right",
+                                           rotation_mode="anchor", fontsize=9)
+
+                if color_map:
+                    for tick_label in ticks:
+                        group = group_by_label.get(tick_label.get_text())
+                        if group is not None:
+                            tick_label.set_color(color_map[group])
+                            tick_label.set_fontweight("bold")
+                    handles = [plt.Line2D([0], [0], marker="s", linestyle="", markersize=8,
+                                          color=color_map[g], label=g) for g in color_map]
+                    ax.legend(handles=handles, title="Kelompok", loc="upper right")
+
+                ax.set_title(title + page.title_suffix)
+                ax.set_ylabel("Jarak (Ward, Euclidean)")
+                clean_axes(ax, grid_axis="y")
+                paths.append(save_figure(fig, output_path.with_name(paged_name(output_path.name, page)),
+                                         dpi=dpi, formats=formats))
+            return paths
 
     @staticmethod
     def _standardize(X: np.ndarray) -> np.ndarray:

@@ -1,12 +1,12 @@
 """
 Manajer AutoDock Vina. Resolusi & auto-download binary yang cocok untuk
 mesin pengguna langsung dari GitHub Releases
-(https://github.com/ccsb-scripps/AutoDock-Vina/releases), TANPA
+(https://github.com/ccsb-scripps/AutoDock-Vina/releases), tanpa
 mengharuskan pengguna mengunduh executable secara manual.
 
 Kenapa ini butuh penanganan khusus (bukan 1 pola regex sederhana): skema
 penamaan asset Vina berubah beberapa kali sepanjang sejarah rilisnya, dan
-TIDAK SEMUA versi mendukung Windows:
+tidak semua versi mendukung Windows:
 
     v1.1.2-boost-new       : hanya Linux (vina_1.1.2-boost-new_linux_x86_64)
     v1.2.0 sampai v1.2.2   : hanya Linux/macOS, tanpa Windows
@@ -16,7 +16,7 @@ TIDAK SEMUA versi mendukung Windows:
                              vina_{ver}_mac_{x86_64,aarch64})
 
 Deteksi memakai daftar pola regex (bukan template tunggal) yang dicoba
-berurutan per nama asset, robust terhadap era mana pun tanpa perlu tahu
+berurutan per nama asset, tahan terhadap era penamaan mana pun tanpa perlu tahu
 versi rilis sebelumnya.
 """
 
@@ -174,7 +174,7 @@ class VinaReleaseManager:
             raise RuntimeError(
                 f"Tidak ada binary AutoDock Vina yang kompatibel dengan mesin ini "
                 f"({_host_os()}/{_host_arch()}) ditemukan di GitHub Releases. "
-                f"Versi 1.2.0-1.2.2 diketahui TIDAK menyediakan build Windows, coba versi >=1.2.3."
+                f"Versi 1.2.0-1.2.2 diketahui tidak menyediakan build Windows, coba versi >=1.2.3."
             )
 
         chosen = next((a for a in compatible if a.version == version), None) if version else compatible[0]

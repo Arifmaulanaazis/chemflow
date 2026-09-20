@@ -3,15 +3,15 @@ Konversi molekul RDKit -> PDB -> PDBQT lewat OpenBabel CLI (``obabel``).
 
 Beberapa kuirk penting yang membuat pemanggilan langsung ``subprocess.run``
 naif gagal di Windows (semua ditangani di sini):
-  - Format inference OpenBabel dari ekstensi file GAGAL DIAM-DIAM di Windows
+  - Format inference OpenBabel dari ekstensi file gagal DIAM-DIAM di Windows
     jika path output mengandung spasi -> selalu deklarasikan ``-i``/``-o``
     eksplisit, jangan andalkan ekstensi.
-  - Flag ``-O<path>`` HARUS digabung tanpa spasi dengan path-nya (kuirk CLI
+  - Flag ``-O<path>`` harus digabung tanpa spasi dengan path-nya (kuirk CLI
     OpenBabel, bukan typo).
   - OpenBabel dijalankan dengan ``cwd`` di direktori binary-nya sendiri pada
     beberapa instalasi portable -> semua path harus di-absolutkan dulu.
   - OpenBabel bisa exit code 0 walau gagal diam-diam (mis. output kosong)
-    -> exit code SAJA tidak cukup, ukuran file output ikut divalidasi.
+    -> exit code saja tidak cukup, ukuran file output ikut divalidasi.
   - Reseptor rigid (``-xr``) kadang tetap ditulisi baris
     ROOT/ENDROOT/BRANCH/ENDBRANCH/TORSDOF oleh OpenBabel -> Vina menolak
     file semacam itu untuk reseptor, jadi baris-baris itu disaring manual.
@@ -105,9 +105,11 @@ class OpenBabelConverter:
             pdb_path: file .pdb input.
             output_pdbqt: path .pdbqt output.
             is_receptor: True -> tambahkan ``-xr`` (reseptor rigid, tanpa
-                pohon torsi). False -> ``-h`` (ligan, OpenBabel menghitung
-                muatan Gasteiger & membangun pohon torsi sendiri, wajib
-                untuk ligan karena tanpanya OpenBabel menghasilkan file kosong).
+                pohon torsi). False -> ``-h --partialcharge gasteiger`` (ligan:
+                OpenBabel membangun pohon torsi sendiri dan menulis muatan
+                Gasteiger ke kolom muatan PDBQT. ``-h`` wajib untuk ligan karena
+                tanpanya OpenBabel menghasilkan file kosong; tanpa
+                ``--partialcharge`` kolom muatan bernilai 0.000).
 
         Returns:
             Path file .pdbqt yang ditulis.
@@ -122,7 +124,7 @@ class OpenBabelConverter:
         out_abs = output_pdbqt.absolute()
 
         cmd = [self._obabel, "-i", "pdb", str(pdb_abs), "-o", "pdbqt", f"-O{out_abs}"]
-        cmd.append("-xr" if is_receptor else "-h")
+        cmd.extend(["-xr"] if is_receptor else ["-h", "--partialcharge", "gasteiger"])
 
         self._log.debug(f"obabel: {' '.join(str(c) for c in cmd)}")
         result = run_capture(cmd, cwd=ob_dir)

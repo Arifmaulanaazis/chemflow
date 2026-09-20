@@ -31,6 +31,8 @@ SHEET_ADMET = "ADMET"
 SHEET_ADMET_LEGEND = "Legenda ADMET"
 SHEET_RMSD = "Validasi RMSD"
 SHEET_REPLICATES = "Statistik Replikasi"
+SHEET_GROUP_SUMMARY = "Ringkasan per Grup"
+SHEET_GROUP_DOCKING = "Docking per Grup"
 
 _FILL = {
     Flag.GREEN: PatternFill("solid", fgColor="C6EFCE"),
@@ -61,6 +63,8 @@ def export_results(
     admet_rows: Optional[List[Dict[str, Any]]] = None,
     rmsd_rows: Optional[List[Dict[str, Any]]] = None,
     replicate_stats_rows: Optional[List[Dict[str, Any]]] = None,
+    group_summary_rows: Optional[List[Dict[str, Any]]] = None,
+    group_docking_rows: Optional[List[Dict[str, Any]]] = None,
     logger: Optional[logging.Logger] = None,
 ) -> Path:
     """Tulis seluruh hasil pipeline ke satu workbook Excel multi-sheet.
@@ -73,6 +77,8 @@ def export_results(
         admet_rows: hasil ADMET per ligan (kolom persis seperti CSV ADMETLab3).
         rmsd_rows: hasil validasi RMSD redocking per reseptor.
         replicate_stats_rows: agregasi mean/std afinitas antar replikat.
+        group_summary_rows: ringkasan per grup (fisikokimia, % lolos Ro5, skor kategori ADMET).
+        group_docking_rows: ΔG per reseptor x grup, dibanding ligan native.
         logger: logger opsional.
 
     Returns:
@@ -94,6 +100,10 @@ def export_results(
             _write_sheet(writer, SHEET_RMSD, rmsd_rows)
         if replicate_stats_rows:
             _write_sheet(writer, SHEET_REPLICATES, replicate_stats_rows)
+        if group_summary_rows:
+            _write_sheet(writer, SHEET_GROUP_SUMMARY, group_summary_rows)
+        if group_docking_rows:
+            _write_sheet(writer, SHEET_GROUP_DOCKING, group_docking_rows)
 
     _finalize_workbook(output_path)
     log.info(f"Hasil diekspor ke: {output_path}")
@@ -114,7 +124,7 @@ def _admet_column_order(rows: List[Dict[str, Any]]) -> List[str]:
     for row in rows[1:]:
         present.extend(k for k in row.keys() if k not in present)
 
-    identity = [c for c in ("ligand", "raw_smiles", "smiles") if c in present]
+    identity = [c for c in ("ligand", "group", "raw_smiles", "smiles") if c in present]
     ordered = list(identity)
     for category in CATEGORIES:
         ordered.extend(r.column for r in rules_by_category(category) if r.column in present and r.column not in ordered)

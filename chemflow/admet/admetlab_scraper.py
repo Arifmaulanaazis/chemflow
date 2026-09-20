@@ -2,7 +2,7 @@
 Scraper ADMETLab3 (https://admetlab3.scbdd.com) untuk prediksi ADMET dari SMILES.
 
 Alur: GET halaman index (ambil token CSRF Django) -> POST daftar SMILES
-(server menjalankan model ADMET secara SINKRON sebelum merespons, bisa
+(server menjalankan model ADMET secara sinkron sebelum merespons, bisa
 >20 detik untuk satu batch, jadi read-timeout dibuat longgar) -> cari link
 unduh CSV di HTML hasil (situs ini pernah menyisipkan URL CSV lewat
 `window.open(...)` di dalam <script>, sekarang lewat `<a href="...">`
@@ -163,7 +163,7 @@ class AdmetLabScraper:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         data = {"csrfmiddlewaretoken": token, "smiles-list": smiles_text, "method": "2"}
-        # Endpoint ini menjalankan model ADMET SINKRON di server sebelum
+        # Endpoint ini menjalankan model ADMET sinkron di server sebelum
         # merespons, bisa >20 detik untuk satu batch, jadi read-timeout
         # dibuat longgar (connect tetap ketat).
         return session.post(self.POST_URL, headers=headers, data=data, verify=self._verify, timeout=(10, 180))

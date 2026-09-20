@@ -23,12 +23,27 @@ def _results():
 
 
 def test_bar_similarity_menghasilkan_file(tmp_path):
-    path = SimilarityPlotter(tmp_path).bar_similarity(_results())
-    assert path is not None and path.exists()
+    paths = SimilarityPlotter(tmp_path).bar_similarity(_results())
+    assert [p.name for p in paths] == ["similaritas_bar.png"] and paths[0].exists()
 
 
-def test_bar_similarity_kosong_return_none(tmp_path):
-    assert SimilarityPlotter(tmp_path).bar_similarity([]) is None
+def test_bar_similarity_kosong_return_list_kosong(tmp_path):
+    assert SimilarityPlotter(tmp_path).bar_similarity([]) == []
+
+
+def test_bar_similarity_dipotong_bila_ligan_banyak(tmp_path):
+    results = [_result(f"L{i}", overall=float(i)) for i in range(7)]
+    paths = SimilarityPlotter(tmp_path, max_rows=3).bar_similarity(results)
+    assert [p.name for p in paths] == ["similaritas_bar_part01of03.png", "similaritas_bar_part02of03.png",
+                                       "similaritas_bar_part03of03.png"]
+
+
+def test_footprint_heatmaps_dipotong_bila_residu_banyak(tmp_path):
+    residues = tuple(f"{i}-Ala" for i in range(1, 9))
+    results = [_result("Aspirin", test_res=residues, ref_res=residues), _result("Ibuprofen", test_res=residues[:4]),
+               _result("Naproxen", test_res=residues[2:])]
+    paths = SimilarityPlotter(tmp_path, max_cols=4).footprint_heatmaps(results)
+    assert len(paths) == 3 and all(p.exists() for p in paths)  # 8 residu + 2 residu referensi = 10 kolom
 
 
 def test_scatter_vs_deltag_menghasilkan_file(tmp_path):

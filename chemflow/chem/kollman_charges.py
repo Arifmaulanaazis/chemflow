@@ -4,7 +4,7 @@ Penetapan muatan parsial gaya Kollman united-atom untuk reseptor protein.
 Sumber data:
   - Muatan BACKBONE (N, H amida, CA, HA, C karbonil, O karbonil) memakai
     nilai force field AMBER ff99SB yang terpublikasi luas (Cornell et al.
-    1995, *JACS*; Duan et al. 2003, *J. Comput. Chem.*): N=-0.4157,
+    1995, *JACS* 117:5179; Hornak et al. 2006, *Proteins* 65:712): N=-0.4157,
     H=+0.2719, CA=+0.0337, HA=+0.0823, C=+0.5973, O=-0.5679. Nilai ini
     identik di hampir semua residu standar.
   - Muatan SIDECHAIN untuk residu bermuatan/polar kunci (ASP/GLU

@@ -1,5 +1,5 @@
 """
-Test OpenBabelConverter TANPA memanggil obabel asli. Subprocess di-mock
+Test OpenBabelConverter tanpa memanggil obabel asli. Subprocess di-mock
 supaya test ini jalan di CI mana pun tanpa perlu OpenBabel terpasang.
 Yang divalidasi: konstruksi argv (-i/-o/-O/-h/-xr) dan penanganan error/output-kosong.
 """
@@ -20,7 +20,7 @@ def fake_obabel(tmp_path, monkeypatch):
     return fake_exe
 
 
-def test_ligand_conversion_pakai_flag_h(tmp_path, fake_obabel, monkeypatch):
+def test_ligand_conversion_pakai_flag_h_dan_muatan_gasteiger(tmp_path, fake_obabel, monkeypatch):
     captured = {}
 
     def fake_run_capture(cmd, cwd=None, timeout=None):
@@ -42,6 +42,8 @@ def test_ligand_conversion_pakai_flag_h(tmp_path, fake_obabel, monkeypatch):
     assert result == pdbqt_out
     assert "-h" in captured["cmd"]
     assert "-xr" not in captured["cmd"]
+    index = captured["cmd"].index("--partialcharge")
+    assert captured["cmd"][index + 1] == "gasteiger"
     assert "-i" in captured["cmd"] and "pdb" in captured["cmd"]
     assert "-o" in captured["cmd"] and "pdbqt" in captured["cmd"]
 
@@ -65,6 +67,7 @@ def test_receptor_conversion_pakai_flag_xr_dan_strip_torsion_tags(tmp_path, fake
 
     converter.pdb_to_pdbqt(pdb_in, pdbqt_out, is_receptor=True)
     assert "-xr" in captured["cmd"]
+    assert "--partialcharge" not in captured["cmd"]
     content = pdbqt_out.read_text()
     assert "ROOT" not in content
     assert "TORSDOF" not in content

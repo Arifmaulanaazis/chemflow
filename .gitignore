@@ -9,3 +9,5 @@ chemflow_templates/
 contoh/
 .cache/
 *.log
+hasil/
+docs/presentasi/

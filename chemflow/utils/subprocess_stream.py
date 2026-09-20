@@ -92,17 +92,24 @@ def stream_process(
     proc = subprocess.Popen(list(cmd), **popen_kwargs)
 
     lines: List[str] = []
-    while True:
-        line = proc.stdout.readline() if proc.stdout else ""
-        if not line:
-            if proc.poll() is not None:
-                break
-            continue
-        lines.append(line)
-        if echo:
-            print(f"    {line}", end="", flush=True)
-        if on_line:
-            on_line(line.rstrip("\n"))
+    try:
+        while True:
+            line = proc.stdout.readline() if proc.stdout else ""
+            if not line:
+                if proc.poll() is not None:
+                    break
+                continue
+            lines.append(line)
+            if echo:
+                print(f"    {line}", end="", flush=True)
+            if on_line:
+                on_line(line.rstrip("\n"))
 
-    ret = proc.wait()
+        ret = proc.wait()
+    except BaseException:
+        # Ctrl+C / error: proses anak berkonsol tersembunyi (CREATE_NO_WINDOW) tidak menerima
+        # sinyal itu dan akan jadi proses yatim yang terus menulis keluaran, jadi matikan di sini.
+        proc.kill()
+        proc.wait()
+        raise
     return ret, lines

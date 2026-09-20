@@ -15,7 +15,7 @@ class LipinskiResult:
     """Hasil evaluasi Lipinski's Rule of Five untuk satu senyawa.
 
     Aturan (Lipinski et al. 1997): senyawa punya potensi absorpsi oral baik
-    jika TIDAK melanggar lebih dari 1 dari 4 kriteria berikut:
+    jika tidak melanggar lebih dari 1 dari 4 kriteria berikut:
       - Berat molekul (MW) <= 500 Da
       - LogP (koefisien partisi oktanol-air) <= 5
       - Donor ikatan hidrogen (HBD) <= 5

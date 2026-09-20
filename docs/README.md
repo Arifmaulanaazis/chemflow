@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.9 atau lebih baru" src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white"></a>
   <a href="../LICENSE"><img alt="Lisensi MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
-  <a href="../pyproject.toml"><img alt="Versi 0.1.0" src="https://img.shields.io/badge/version-0.1.0-3C71E8"></a>
+  <a href="../pyproject.toml"><img alt="Versi 2.0.0" src="https://img.shields.io/badge/version-2.0.0-3C71E8"></a>
   <img alt="Platform Windows, macOS, dan Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
   <img alt="Docking dengan AutoDock Vina" src="https://img.shields.io/badge/docking-AutoDock%20Vina-8E70EB">
   <img alt="Kemoinformatika dengan RDKit" src="https://img.shields.io/badge/cheminformatics-RDKit-8E70EB">
@@ -21,20 +21,22 @@ referensi teknis lanjutan: diagram alur algoritma tiap tahap pipeline,
 ditulis sebagai Mermaid flowchart (render otomatis di GitHub, GitLab, dan
 kebanyakan editor Markdown).
 
-- [Alur Utama Pipeline](pipeline-overview.md)
+- [Alur Utama Pipeline (termasuk Resume dan checkpoint)](pipeline-overview.md)
 - [Preparasi Ligan](ligand-preparation.md)
 - [Preparasi Reseptor](receptor-preparation.md)
 - [Konfigurasi Reseptor Interaktif](receptor-config.md)
 - [Docking (Resolusi Vina & Matriks)](docking.md)
-- [Validasi RMSD Redocking](rmsd-validation.md)
-- [Merge Kompleks & Analitik (PCA, HCA, Heatmap)](merge-and-analytics.md)
+- [Validasi RMSD Redocking dan Ligan Native](rmsd-validation.md)
+- [Merge Kompleks & Analitik (PCA gaya jurnal, HCA, Heatmap, Grafik per Grup, Pemotongan Grafik)](merge-and-analytics.md)
+- [Ekspor Interaksi Otomatis dari BIOVIA (termasuk penguncian input)](biovia-interactions.md)
 - [Analisis Similaritas Interaksi](similarity-analysis.md)
+- [Analisis GC-MS (opsional)](gcms-analysis.md)
 - [Pemakaian sebagai Library](library-usage.md)
 
 ## Tentang
 
 chemflow merangkai seluruh alur skrining virtual (preparasi, ADMET, docking
-AutoDock Vina, validasi RMSD, analitik) dalam satu perintah. Dikembangkan oleh
+AutoDock Vina, validasi RMSD, analitik) dalam satu perintah, dengan analisis GC-MS opsional. Dikembangkan oleh
 Arif Maulana Azis dan dirilis dengan lisensi MIT. Ringkasan proyek, versi,
 dan tautan repositori ada di bagian [Tentang](../README.md#tentang) pada
 `README.md`.

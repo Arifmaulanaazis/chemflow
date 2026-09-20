@@ -1,17 +1,18 @@
 """
-Pembaca file Excel hasil export interaksi ligan-reseptor dari BIOVIA
-Discovery Studio Visualizer.
+Pembaca file Excel interaksi ligan-reseptor dari BIOVIA Discovery Studio.
 
-Format export BIOVIA bersifat POSISIONAL (tanpa header baku) dengan urutan
-kolom: Name, Rendered, Color, Style, ID, Category, Type/Subtype, From,
-From Chemistry, To, To Chemistry, lalu opsional Distance/Angle di kolom
-berikutnya. Kolom sampai "To Chemistry" (indeks 0-10, 11 kolom) DIJAMIN
-selalu ada; kolom setelah itu tidak diandalkan sama sekali di sini karena
-BIOVIA kadang tidak menampilkannya.
+Sumbernya tabel Non-bond BIOVIA, baik hasil ``chemflow.interaction`` (otomatis)
+maupun ekspor manual. Kolom yang dipakai: Category, Types (atau Type/Subtype),
+From, From Chemistry, To, To Chemistry. Bila baris pertama berisi judul kolom,
+kolom dicari lewat namanya, jadi urutan dan kolom tambahan (Distance, Angle,
+ID, ...) tidak berpengaruh. Tanpa judul, dipakai urutan posisi bawaan
+Discovery Studio: Name, Visible/Rendered, Color, Parent/Style, Distance/ID,
+Category, Types, From, From Chemistry, To, To Chemistry (indeks 0 sampai 10).
 
-Setiap baris merepresentasikan satu interaksi antara dua atom, ditulis
-sebagai spek posisi "Chain:RESNAME+RESNUM:ATOMNAME" (mis. "A:SER195:OG"),
-diparse lewat regex pada kolom From/To.
+Setiap baris adalah satu interaksi antara dua sisi. Sisi ditulis sebagai
+"Chain:RESNAME+RESNUM:ATOMNAME" (mis. "A:SER195:OG"). Interaksi pi
+(Pi-Sigma, Pi-Pi) menuliskan cincin aromatik tanpa nama atom ("A:PHE330"),
+sehingga bagian atom bersifat opsional.
 """
 
 from __future__ import annotations
@@ -21,10 +22,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
-_MIN_COLUMNS = 11  # Name..To Chemistry (indeks 0-10)
+_MIN_COLUMNS = 11  # tanpa judul kolom: Name..To Chemistry (indeks 0-10)
+_POSITIONAL = {"category": 5, "type_subtype": 6, "from": 7, "from_chemistry": 8, "to": 9, "to_chemistry": 10}
+_HEADER_NAMES = {
+    "category": ("category",),
+    "type_subtype": ("types", "type", "type/subtype"),
+    "from": ("from",),
+    "from_chemistry": ("from chemistry",),
+    "to": ("to",),
+    "to_chemistry": ("to chemistry",),
+}
 
 _ATOM_SPEC_RE = re.compile(
-    r"^\s*(?P<chain>[A-Za-z0-9]{1,2}):(?P<resname>[A-Za-z0-9]{1,4}?)(?P<resnum>-?\d+):(?P<atom>.+?)\s*$"
+    r"^\s*(?P<chain>[A-Za-z0-9]{1,2}):(?P<resname>[A-Za-z0-9]{1,4}?)(?P<resnum>-?\d+)(?::(?P<atom>.+?))?\s*$"
 )
 
 
@@ -68,30 +78,30 @@ def parse_atom_spec(raw: object) -> AtomSpec:
         raise ValueError(f"Format spek atom BIOVIA tidak dikenali: {raw!r}")
     return AtomSpec(
         chain=match.group("chain"), resname=match.group("resname").upper(),
-        resnum=int(match.group("resnum")), atom_name=match.group("atom"),
+        resnum=int(match.group("resnum")), atom_name=match.group("atom") or "",
     )
 
 
 def read_biovia_interactions(path: "str | Path") -> List[BiovaInteraction]:
-    """Baca file Excel export interaksi BIOVIA Discovery Studio.
+    """Baca file Excel interaksi BIOVIA Discovery Studio.
 
-    Toleran terhadap kolom trailing (Distance/Angle/ID tambahan) yang
-    hilang/variabel, karena hanya 11 kolom pertama (Name..To Chemistry)
-    yang dibaca. Baris pertama dianggap header (dilewati) hanya jika
-    kolom From/To-nya TIDAK cocok pola spek atom BIOVIA; jika cocok,
-    seluruh baris (termasuk baris pertama) dianggap data.
+    Bila baris pertama berisi judul kolom (From, To, Category, Types), kolom
+    dicari lewat namanya dan baris itu dilewati; file yang hanya berisi judul
+    berarti kompleks tanpa interaksi dan menghasilkan daftar kosong. Tanpa
+    judul dipakai urutan posisi bawaan (lihat docstring modul). Baris pertama
+    tanpa judul yang dikenali dianggap header hanya bila From/To-nya bukan
+    spek atom; jika berupa spek atom, seluruh baris dianggap data.
 
     Args:
-        path: path file .xlsx export BIOVIA.
+        path: path file .xlsx interaksi BIOVIA.
 
     Returns:
         Daftar ``BiovaInteraction``, satu per baris data.
 
     Raises:
         FileNotFoundError: file tidak ditemukan.
-        ValueError: kolom wajib (sampai "To Chemistry") tidak lengkap di
-            baris tertentu, atau spek atom From/To tidak bisa diparse
-            (pesan menyebut nama file & nomor baris untuk debugging).
+        ValueError: file kosong, kolom wajib tidak lengkap, atau spek atom
+            From/To tidak bisa diparse (pesan menyebut nama file dan nomor baris).
     """
     from openpyxl import load_workbook
 
@@ -108,30 +118,54 @@ def read_biovia_interactions(path: "str | Path") -> List[BiovaInteraction]:
     if not rows:
         raise ValueError(f"File interaksi BIOVIA kosong: {path}")
 
+    columns = _columns_from_header(rows[0])
     start = 0
-    if len(rows) > 1 and not _looks_like_data_row(rows[0]):
-        start = 1  # baris pertama header, lewati (hanya jika ada baris data lain setelahnya)
+    if columns is not None:
+        start = 1
+    elif len(rows) > 1 and not _looks_like_data_row(rows[0]):
+        start = 1  # baris pertama judul yang tak dikenali; hanya dilewati bila ada baris data setelahnya
+    if columns is None:
+        columns = _POSITIONAL
+    needed = max(columns["from"], columns["to"], columns["category"], columns["type_subtype"]) + 1
+    if columns is _POSITIONAL:
+        needed = _MIN_COLUMNS
+
+    def cell(row: list, key: str) -> str:
+        index = columns.get(key)
+        return str(row[index] or "") if index is not None and index < len(row) else ""
 
     interactions: List[BiovaInteraction] = []
     for row_idx, row in enumerate(rows[start:], start=start + 1):
-        if len(row) < _MIN_COLUMNS:
+        if len(row) < needed:
             raise ValueError(
-                f"Baris {row_idx} di '{path.name}' hanya punya {len(row)} kolom, minimal {_MIN_COLUMNS} "
-                f"(Name..To Chemistry) diperlukan. Pastikan file adalah export BIOVIA Discovery Studio yang valid."
+                f"Baris {row_idx} di '{path.name}' hanya punya {len(row)} kolom, minimal {needed} "
+                f"diperlukan. Pastikan file adalah export BIOVIA Discovery Studio yang valid."
             )
         try:
-            from_spec = parse_atom_spec(row[7])
-            to_spec = parse_atom_spec(row[9])
+            from_spec = parse_atom_spec(cell(row, "from"))
+            to_spec = parse_atom_spec(cell(row, "to"))
         except ValueError as exc:
             raise ValueError(f"Baris {row_idx} di '{path.name}': {exc}") from exc
 
         interactions.append(BiovaInteraction(
-            category=str(row[5] or ""), type_subtype=str(row[6] or ""),
-            from_spec=from_spec, from_chemistry=str(row[8] or ""),
-            to_spec=to_spec, to_chemistry=str(row[10] or ""),
+            category=cell(row, "category"), type_subtype=cell(row, "type_subtype"),
+            from_spec=from_spec, from_chemistry=cell(row, "from_chemistry"),
+            to_spec=to_spec, to_chemistry=cell(row, "to_chemistry"),
         ))
 
     return interactions
+
+
+def _columns_from_header(row: list) -> "dict | None":
+    """Peta kolom dari baris judul, atau None bila baris itu bukan judul Non-bond BIOVIA."""
+    names = [str(cell or "").strip().lower() for cell in row]
+    columns = {}
+    for key, aliases in _HEADER_NAMES.items():
+        for alias in aliases:
+            if alias in names:
+                columns[key] = names.index(alias)
+                break
+    return columns if {"category", "type_subtype", "from", "to"} <= columns.keys() else None
 
 
 def _looks_like_data_row(row) -> bool:

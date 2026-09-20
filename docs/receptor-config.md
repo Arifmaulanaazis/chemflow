@@ -50,11 +50,15 @@ flowchart TD
 
 Pusat kotak adalah rata-rata koordinat atom ligan yang dipilih, dibulatkan ke
 tiga desimal. Ukuran usulan dihitung dari sisi bounding-box terpanjang ligan
-(`NativeLigand.extent`) lewat `GridBox.cube_for_extent`:
+(`NativeLigand.extent`) lewat `GridBox.suggested_size` (dasarnya `GridBox.cube_for_extent`):
 
 ```
 ukuran = min(ceil(max(panjang + 8, 18)), 30)   Angstrom
 ```
+
+Rumus yang sama dipakai `chemflow run` untuk ukuran kotak yang tidak diisi
+(lihat [Sumber gridbox](docking.md#sumber-gridbox)); padding 8 Angstrom diatur
+dengan `--box-padding`.
 
 Ruang tambahan 8 Angstrom memberi ligan uji ruang berputar, batas bawah 18
 mencegah kotak terlalu sempit untuk ligan kecil atau ion, dan batas atas 30
@@ -73,5 +77,5 @@ langsung terbaca oleh `chemflow run --receptors`.
 | `size_x`, `size_y`, `size_z` | Ukuran kotak (Angstrom). |
 | `native_ligand` | Label ligan asal (`RESNAME_ChainResnum`) atau `manual`. Catatan saja, tidak dibaca chemflow. |
 
-Pada `chemflow run --run-rmsd-validation`, ligan native dipilih sebagai yang
-paling dekat dengan pusat kotak, sehingga selalu ligan yang dipilih di sini.
+Pada `chemflow run`, ligan native referensi dipilih sebagai yang paling dekat dengan
+pusat kotak (paling jauh 8 Angstrom), sehingga selalu ligan yang dipilih di sini.

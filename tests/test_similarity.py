@@ -41,8 +41,8 @@ def test_compute_similarity_residu_sama_tipe_beda():
 
     Contoh angka dihitung manual (bukan direproduksi dari tabel paper):
     referensi punya 4 residu unik dengan 4 interaksi (1 tipe per residu).
-    Ligan uji berinteraksi dengan SEMUA 4 residu yang sama (nAAtest=4,
-    nAAref=4 -> 100%), tapi HANYA 1 dari 4 pasangan (residu, tipe) yang
+    Ligan uji berinteraksi dengan semua 4 residu yang sama (nAAtest=4,
+    nAAref=4 -> 100%), tapi hanya 1 dari 4 pasangan (residu, tipe) yang
     persis sama dengan referensi (intAAtest=1, intAAref=4 -> 25%).
     Overall = 0.5*100 + 0.5*25 = 62.5%.
     """
@@ -246,6 +246,43 @@ def test_analyzer_membaca_afinitas_untuk_delta_g(tmp_path):
     assert result.affinity_test == pytest.approx(-6.4)
     assert result.affinity_ref == pytest.approx(-12.5)
     assert result.delta_g == pytest.approx(6.1)
+
+
+def test_analyzer_delta_g_dari_docking_native_bila_tanpa_sheet_rmsd(tmp_path):
+    output_dir = tmp_path / "hasil"
+    complex_dir = output_dir / "complexes" / "6LU7"
+    complex_dir.mkdir(parents=True)
+    for name, ligand, native in (("NATIVE_ASP_X1_complex", "Celecoxib", True), ("Aspirin_complex", "Aspirin", False)):
+        pdb = complex_dir / f"{name}.pdb"
+        pdb.write_text("REMARK stub\n")
+        _write_metadata(pdb, ligand_name=ligand, ligand_chain="X", ligand_resname="ASP", is_native=native)
+    interactions = output_dir / "interaksi" / "6LU7"
+    interactions.mkdir(parents=True)
+    contacts = [(75, "HIS", "NE2", "Conventional Hydrogen Bond")]
+    _write_biovia_excel(interactions / "NATIVE_ASP_X1_complex_interaksi.xlsx", contacts)
+    _write_biovia_excel(interactions / "Aspirin_complex_interaksi.xlsx", contacts)
+    with pd.ExcelWriter(output_dir / "hasil_chemflow.xlsx") as writer:
+        pd.DataFrame([
+            {"ligand": "Aspirin", "group": "AINS", "receptor": "6LU7", "affinity_best": -6.4},
+            {"ligand": "NATIVE_ASP_X1", "group": "Native", "receptor": "6LU7", "affinity_best": -12.5},
+        ]).to_excel(writer, sheet_name="Statistik Replikasi", index=False)
+
+    result = SimilarityAnalyzer().analyze_output_dir(output_dir)[0]
+    assert result.affinity_ref == pytest.approx(-12.5)
+    assert result.delta_g == pytest.approx(6.1)
+
+
+def test_analyzer_sheet_rmsd_menang_atas_docking_native(tmp_path):
+    output_dir = tmp_path / "hasil"
+    output_dir.mkdir()
+    with pd.ExcelWriter(output_dir / "hasil_chemflow.xlsx") as writer:
+        pd.DataFrame([
+            {"ligand": "NATIVE_X", "group": "Native", "receptor": "6LU7", "affinity_best": -9.0},
+        ]).to_excel(writer, sheet_name="Statistik Replikasi", index=False)
+        pd.DataFrame([{"receptor": "6LU7", "redock_affinity": -11.0}]).to_excel(
+            writer, sheet_name="Validasi RMSD", index=False)
+    _, reference = SimilarityAnalyzer()._load_affinities(output_dir)
+    assert reference == {"6LU7": -11.0}
 
 
 def test_analyzer_tanpa_workbook_delta_g_kosong(tmp_path):

@@ -2,7 +2,7 @@
 Test ReceptorPreparer dgn mol RDKit sintetis (dibangun manual, bonds &
 koordinat eksplisit, tidak bergantung file PDB nyata/tool eksternal):
   - _clean(): residu air & ligan asli dibuang, residu HETATM "termodifikasi"
-    (backbone N-CA-C lengkap, mis. MSE) DIPERTAHANKAN.
+    (backbone N-CA-C lengkap, mis. MSE) dipertahankan.
   - prepare_for_docking(): H polar-only + Kollman charge + tipe AD4 -> PDBQT
     tanpa tag torsi (ROOT/BRANCH/TORSDOF, reseptor harus rigid).
   - prepare_for_merge(): reseptor bersih, nol atom H, nol muatan.

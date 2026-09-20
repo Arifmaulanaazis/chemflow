@@ -2,7 +2,7 @@
 Pembaca Excel untuk data reseptor. Kode PDB wajib, kolom gridbox opsional
 (pusat x/y/z, ukuran x/y/z, atau ukuran seragam satu kolom).
 
-Baris dengan kode PDB duplikat DIDUKUNG dan bukan dianggap error. Ini
+Baris dengan kode PDB duplikat didukung dan bukan dianggap error. Ini
 memungkinkan multi-situs docking (reseptor sama, gridbox/binding-site
 berbeda per baris).
 """

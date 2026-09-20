@@ -49,17 +49,34 @@ def test_plot_dendrogram_menghasilkan_file(tmp_path):
     matrix, labels, groups = _synthetic_matrix()
     hca = HierarchicalClustering()
     result = hca.compute(matrix, labels, groups)
-    out_path = hca.plot_dendrogram(result, tmp_path / "dendro.png")
-    assert out_path.exists()
-    assert out_path.stat().st_size > 0
+    paths = hca.plot_dendrogram(result, tmp_path / "dendro.png")
+    assert [p.name for p in paths] == ["dendro.png"]
+    assert paths[0].exists()
+    assert paths[0].stat().st_size > 0
 
 
 def test_plot_dendrogram_tanpa_grup_tidak_error(tmp_path):
     matrix, labels, _ = _synthetic_matrix()
     hca = HierarchicalClustering()
     result = hca.compute(matrix, labels)  # groups=None
-    out_path = hca.plot_dendrogram(result, tmp_path / "dendro.png", color_by_group=True)
-    assert out_path.exists()
+    paths = hca.plot_dendrogram(result, tmp_path / "dendro.png", color_by_group=True)
+    assert paths[0].exists()
+
+
+def test_plot_dendrogram_dipotong_menjadi_jendela_daun(tmp_path):
+    matrix, labels, groups = _synthetic_matrix()
+    hca = HierarchicalClustering()
+    result = hca.compute(matrix, labels, groups)
+    paths = hca.plot_dendrogram(result, tmp_path / "dendro.png", max_leaves=3)
+    assert [p.name for p in paths] == ["dendro_part01of03.png", "dendro_part02of03.png", "dendro_part03of03.png"]
+    assert all(p.exists() for p in paths)
+
+
+def test_plot_dendrogram_tanpa_batas_satu_gambar(tmp_path):
+    matrix, labels, groups = _synthetic_matrix()
+    hca = HierarchicalClustering()
+    result = hca.compute(matrix, labels, groups)
+    assert len(hca.plot_dendrogram(result, tmp_path / "dendro.png", max_leaves=0)) == 1
 
 
 def test_standardize_hasil_mean_nol_std_satu():

@@ -4,7 +4,7 @@ karena reseptor docking bersifat rigid).
 
 Dipakai alih-alih OpenBabel untuk reseptor supaya muatan Kollman
 (``chem/kollman_charges.py``) dan tipe atom AutoDock4
-(``chem/atom_typing.py``) yang sudah dihitung TIDAK tertimpa oleh model
+(``chem/atom_typing.py``) yang sudah dihitung tidak tertimpa oleh model
 muatan Gasteiger bawaan OpenBabel. Kalau konversi lewat obabel, OpenBabel
 akan menghitung ulang muatannya sendiri dan mengabaikan nilai Kollman.
 

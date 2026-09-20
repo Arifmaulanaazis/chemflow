@@ -20,11 +20,11 @@ Input berupa daftar ``ProteinLigandContact`` (lihat ``biovia_reader.py``),
 sudah disaring hanya kontak protein-ligan murni.
 
 Modul ini juga menyediakan ``SimilarityAnalyzer``, orkestrator yang men-scan
-folder hasil ``chemflow run`` (struktur ``complexes/<reseptor>/*.pdb`` +
+folder hasil ``chemflow run`` (struktur ``complexes/<kunci>/*.pdb`` +
 sidecar ``.json``) dan mencocokkannya dengan file interaksi BIOVIA yang
 dibuat manual oleh pengguna, lalu mengekspor hasilnya ke Excel.
 
-Analisis ini OPSIONAL (default tidak berjalan sebagai bagian ``run``) dan
+Analisis ini opsional (default tidak berjalan sebagai bagian ``run``) dan
 bisa di-rerun kapan saja pada folder output yang sudah ada, karena file
 interaksi BIOVIA memang baru dibuat pengguna setelah proses docking selesai.
 """
@@ -156,17 +156,18 @@ class SimilarityAnalyzer:
 
         Konvensi penamaan file interaksi (dibuat manual oleh pengguna dari
         export BIOVIA Discovery Studio): untuk setiap file kompleks
-        ``complexes/<reseptor>/<basis>.pdb``, file interaksinya HARUS ada di
-        ``<interactions_dir>/<reseptor>/<basis><interaction_suffix>``
+        ``complexes/<kunci>/<basis>.pdb``, file interaksinya harus ada di
+        ``<interactions_dir>/<kunci>/<basis><interaction_suffix>``
         (default ``interactions_dir`` = ``<output_dir>/interaksi``, default
         ``interaction_suffix`` = ``"_interaksi.xlsx"``). Struktur folder
-        ``<interactions_dir>`` MEMBAYANGKAN struktur ``complexes/`` persis.
+        ``<interactions_dir>`` membayangkan struktur ``complexes/`` persis.
 
         Reseptor tanpa kompleks referensi native (``is_native: true`` di
-        sidecar JSON, dihasilkan otomatis saat ``run_rmsd_validation=True``)
-        DILEWATI dengan warning, karena tidak ada baseline pembanding.
+        sidecar JSON, dihasilkan otomatis oleh run yang mendeteksi ligan native,
+        default ``include_native=True``)
+        dilewati dengan warning, karena tidak ada baseline pembanding.
         Ligan uji yang file interaksinya belum dibuat/tidak ditemukan
-        DILEWATI dengan warning (bukan fatal), sehingga bisa di-rerun
+        dilewati dengan warning (bukan fatal), sehingga bisa di-rerun
         bertahap saat pengguna menambah file interaksi satu per satu.
 
         Args:
@@ -215,10 +216,14 @@ class SimilarityAnalyzer:
             self._log.info("hasil_chemflow.xlsx tidak ada di folder output, selisih delta G tidak dihitung.")
             return test_affinity, reference_affinity
 
+        native_affinity: Dict[str, float] = {}
         try:
             stats = pd.read_excel(workbook, sheet_name="Statistik Replikasi")
             for _, row in stats.iterrows():
-                test_affinity[(str(row["ligand"]), str(row["receptor"]))] = float(row["affinity_best"])
+                receptor, value = str(row["receptor"]), float(row["affinity_best"])
+                test_affinity[(str(row["ligand"]), receptor)] = value
+                if str(row.get("group", "")) == "Native":     # ligan native yang di-dock ulang bersama ligan uji
+                    native_affinity[receptor] = min(value, native_affinity.get(receptor, value))
         except (ValueError, KeyError, OSError):
             self._log.info("Sheet 'Statistik Replikasi' tidak tersedia, selisih delta G tidak dihitung.")
 
@@ -228,7 +233,13 @@ class SimilarityAnalyzer:
                 if pd.notna(row.get("redock_affinity")):
                     reference_affinity[str(row["receptor"])] = float(row["redock_affinity"])
         except (ValueError, KeyError, OSError):
-            self._log.info("Afinitas redocking native tidak tersedia, selisih delta G tidak dihitung.")
+            self._log.info("Sheet 'Validasi RMSD' tidak ada, referensi ΔG diambil dari docking ligan native.")
+
+        # Tanpa --run-rmsd-validation tidak ada sheet RMSD, tetapi native tetap di-dock: pakai ΔG-nya.
+        for receptor, value in native_affinity.items():
+            reference_affinity.setdefault(receptor, value)
+        if not reference_affinity:
+            self._log.info("Afinitas ligan native tidak tersedia, selisih delta G tidak dihitung.")
 
         return test_affinity, reference_affinity
 
@@ -252,7 +263,8 @@ class SimilarityAnalyzer:
         if native_pdb is None:
             self._log.warning(
                 f"Reseptor '{receptor_key}': tidak ada kompleks referensi native (jalankan pipeline dengan "
-                f"--run-rmsd-validation agar referensi native ikut ter-merge). Similaritas dilewati untuk reseptor ini."
+                f"tanpa --no-native, dan pastikan struktur PDB-nya punya ligan native di dekat pusat kotak). "
+                f"Similaritas dilewati untuk reseptor ini."
             )
             return []
 

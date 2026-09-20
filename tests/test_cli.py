@@ -237,3 +237,116 @@ def test_main_similarity_end_to_end(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "1 pasangan ligan-reseptor" in captured.out
+
+
+def test_parser_run_opsi_baru_default():
+    args = build_parser().parse_args(["run", "--ligands", "a.xlsx", "--receptors", "b.xlsx"])
+    assert args.no_native is False and args.box_padding == 8.0 and args.default_box_size == 20.0
+    assert args.plot_max_rows == 30 and args.plot_max_cols == 20
+
+
+def test_parser_run_opsi_baru_diisi():
+    args = build_parser().parse_args(["run", "--ligands", "a.xlsx", "--receptors", "b.xlsx", "--no-native",
+                                      "--box-padding", "6", "--plot-max-rows", "0", "--plot-max-cols", "12"])
+    assert args.no_native is True and args.box_padding == 6.0
+    assert args.plot_max_rows == 0 and args.plot_max_cols == 12
+
+
+def test_parser_similarity_opsi_potong_plot():
+    args = build_parser().parse_args(["similarity", "--output", "hasil", "--plot-max-rows", "10"])
+    assert args.plot_max_rows == 10 and args.plot_max_cols == 20
+
+
+def test_parser_resume_butuh_output():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["resume"])
+
+
+def test_parser_resume_lengkap():
+    args = build_parser().parse_args(["resume", "--output", "hasil", "--no-progress", "--log-level", "DEBUG",
+                                      "--openbabel-path", "ob.exe", "--vina-executable", "vina.exe"])
+    assert args.command == "resume" and str(args.output) == "hasil" and args.no_progress is True
+    assert args.log_level == "DEBUG" and str(args.openbabel_path) == "ob.exe" and str(args.vina_executable) == "vina.exe"
+
+
+def test_parser_resume_tidak_menerima_setelan_run():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["resume", "--output", "hasil", "--exhaustiveness", "16"])
+
+
+def test_main_resume_folder_tanpa_state(tmp_path, capsys):
+    assert main(["resume", "--output", str(tmp_path / "kosong")]) == 1
+    out = capsys.readouterr().out
+    assert "Gagal" in out and "chemflow run" in out
+
+
+def _state_folder(tmp_path, finished=False):
+    from chemflow.config import PipelineConfig
+    from chemflow.state import RunState
+
+    ligand = tmp_path / "ligan.xlsx"
+    pd.DataFrame({"name": ["Etanol"], "smiles": ["CCO"]}).to_excel(ligand, index=False)
+    receptor = tmp_path / "reseptor.xlsx"
+    pd.DataFrame({"pdb_code": ["1AKI"]}).to_excel(receptor, index=False)
+    out = tmp_path / "hasil"
+    state = RunState(out)
+    state.save_config(PipelineConfig(ligand_excel=ligand, receptor_excel=receptor, output_dir=out, n_replicates=2))
+    state.update_progress("docking" if not finished else "selesai", finished=finished)
+    return out
+
+
+def test_main_resume_menjalankan_pipeline_dengan_resume_dan_override(tmp_path, monkeypatch, capsys):
+    import chemflow.cli as cli
+
+    out = _state_folder(tmp_path)
+    captured = {}
+
+    class _FakePipeline:
+        def __init__(self, config, resume=False):
+            captured.update(config=config, resume=resume)
+
+        def run(self):
+            return 0
+
+    monkeypatch.setattr(cli, "Pipeline", _FakePipeline)
+    ret = main(["resume", "--output", str(out), "--no-progress", "--log-level", "WARNING",
+                "--openbabel-path", str(tmp_path / "ob.exe")])
+    assert ret == 0 and captured["resume"] is True
+    config = captured["config"]
+    assert config.n_replicates == 2 and config.show_progress is False and config.log_level == "WARNING"
+    assert config.openbabel_path == (tmp_path / "ob.exe").resolve()
+    assert config.output_dir == out.resolve()
+    assert "docking" in capsys.readouterr().out
+
+
+def test_main_resume_run_selesai_memberi_tahu_hanya_regenerasi(tmp_path, monkeypatch, capsys):
+    import chemflow.cli as cli
+
+    out = _state_folder(tmp_path, finished=True)
+    monkeypatch.setattr(cli, "Pipeline", lambda config, resume=False: type("P", (), {"run": lambda self: 0})())
+    assert main(["resume", "--output", str(out)]) == 0
+    assert "sudah selesai" in capsys.readouterr().out
+
+
+def test_main_run_meneruskan_opsi_baru_ke_config(tmp_path, monkeypatch):
+    import chemflow.cli as cli
+
+    ligand = tmp_path / "l.xlsx"
+    pd.DataFrame({"name": ["Etanol"], "smiles": ["CCO"]}).to_excel(ligand, index=False)
+    receptor = tmp_path / "r.xlsx"
+    pd.DataFrame({"pdb_code": ["1AKI"]}).to_excel(receptor, index=False)
+    seen = {}
+
+    class _FakePipeline:
+        def __init__(self, config, resume=False):
+            seen.update(config=config, resume=resume)
+
+        def run(self):
+            return 0
+
+    monkeypatch.setattr(cli, "Pipeline", _FakePipeline)
+    assert main(["run", "--ligands", str(ligand), "--receptors", str(receptor), "--output", str(tmp_path / "o"),
+                 "--no-native", "--box-padding", "5", "--plot-max-rows", "12", "--plot-max-cols", "0"]) == 0
+    config = seen["config"]
+    assert seen["resume"] is False and config.include_native is False and config.box_padding == 5.0
+    assert config.plot_max_rows == 12 and config.plot_max_cols == 0

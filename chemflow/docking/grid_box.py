@@ -2,8 +2,31 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+MAX_BOX_SIZE = 30.0
+
+
+def parse_box_size(text: str, default: float) -> Optional[Tuple[float, float, float]]:
+    """Tafsirkan ukuran kotak: kosong memakai ``default``, satu angka untuk kubus, tiga angka untuk x y z.
+
+    Returns:
+        ``(x, y, z)``, atau ``None`` bila masukan tidak valid.
+    """
+    tokens = text.split()
+    if not tokens:
+        return (default, default, default)
+    try:
+        values = [float(t.replace(",", ".")) for t in tokens]
+    except ValueError:
+        return None
+    if len(values) == 1:
+        values = values * 3
+    if len(values) != 3 or any(not math.isfinite(v) or v <= 0 for v in values):
+        return None
+    return (values[0], values[1], values[2])
 
 
 @dataclass
@@ -65,6 +88,18 @@ class GridBox:
         side = max(base + padding, min_size)
         return cls(center_x=cx, center_y=cy, center_z=cz, size_x=side, size_y=side, size_z=side,
                     ref_label=ref_label)
+
+    @staticmethod
+    def suggested_size(
+        extent: Optional[float], padding: float = 8.0, min_size: float = 18.0, max_size: float = MAX_BOX_SIZE,
+    ) -> float:
+        """Sisi kubus (Angstrom) yang memuat ligan native beserta ruang gerak.
+
+        Ekstensi + padding, minimal ``min_size``, dibulatkan ke atas, maksimum ``max_size``.
+        Ini ukuran default gridbox saat pengguna tidak menentukan ukuran sendiri.
+        """
+        box = GridBox.cube_for_extent(0.0, 0.0, 0.0, extent, padding=padding, min_size=min_size)
+        return float(min(math.ceil(box.size_x), max_size))
 
     @classmethod
     def from_manual(cls, cx: float, cy: float, cz: float,

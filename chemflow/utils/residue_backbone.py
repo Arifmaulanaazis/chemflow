@@ -9,7 +9,7 @@ tetap bagian dari backbone protein. Kode yang memperlakukan "HETATM" sebagai
 sinonim "ligan yang boleh dihapus" adalah sumber bug klasik di pipeline
 preparasi reseptor, bisa menghapus residu penting tanpa sengaja.
 
-Deteksi di sini murni STRUKTURAL (apakah residu punya backbone N-CA-C
+Deteksi di sini murni struktural (apakah residu punya backbone N-CA-C
 lengkap dengan elemen yang benar), bukan berbasis daftar nama residu.
 Konsekuensinya: residu termodifikasi apa pun otomatis tergeneralisasi tanpa
 perlu menambah nama residu baru ke suatu daftar hardcode.

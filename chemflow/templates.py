@@ -192,7 +192,7 @@ def write_ligand_wide_template(path: Path) -> Path:
             ("(header kolom)", "-", "bebas, header = nama kelompok", "Tiap kolom mewakili 1 kelompok sumber senyawa. Isi sel = nama senyawa dalam kelompok itu."),
         ],
         general_notes=[
-            "Format ini dipakai hanya jika TIDAK ADA kolom bernama \"smiles\" di seluruh sheet.",
+            "Format ini dipakai hanya jika tidak ADA kolom bernama \"smiles\" di seluruh sheet.",
             "Panjang tiap kolom boleh beda (sel kosong diabaikan).",
             "Semua nama di sini dicari SMILES-nya otomatis via PubChem (format ini tidak punya kolom SMILES sama sekali).",
             "Jika memakai file hasil ADMETLab3 (--admet-file), urutan ligan adalah kolom dari kiri ke kanan, tiap kolom dari atas ke bawah.",

@@ -28,6 +28,7 @@ COLOR_GOOD = "#009E73"
 COLOR_MEDIUM = "#E69F00"
 COLOR_POOR = "#D55E00"
 COLOR_NEUTRAL = "#8C8C8C"
+COLOR_NATIVE = "#CC79A7"   # ligan native (referensi kokristal), dibedakan dari ligan uji
 
 MARKERS = ["o", "s", "^", "D", "v", "P", "X", "h"]
 
@@ -36,6 +37,12 @@ CMAP_DIVERGING = "coolwarm"
 
 FIG_DPI = 300
 SUPPORTED_FORMATS = ("png", "svg", "pdf")
+
+# Batas default pemotongan otomatis grafik besar (0 atau None = tidak dipotong), lihat analytics.paging.
+DEFAULT_MAX_ROWS = 30       # baris/bar/ligan per gambar
+DEFAULT_MAX_COLS = 20       # kolom per gambar heatmap
+MAX_RADAR_SERIES = 8        # garis (ligan atau grup) per radar
+MAX_RADAR_PAGES = 5         # radar per ligan dibatasi 5 bagian agar tidak jadi ratusan gambar
 
 _RC = {
     "font.family": "sans-serif",
@@ -130,6 +137,36 @@ def annotate_without_overlap(ax, xs, ys, labels, *, fontsize: float = 8.0, color
                                ha="left", va="bottom", fontsize=fontsize, color=color)
             chosen = note.get_window_extent(renderer)
         placed.append(chosen)
+
+
+def text_color_for(rgba) -> str:
+    """Hitam atau putih, mana yang terbaca di atas warna sel ``rgba`` (berdasarkan luminans)."""
+    red, green, blue = rgba[0], rgba[1], rgba[2]
+    return "white" if 0.299 * red + 0.587 * green + 0.114 * blue < 0.5 else "black"
+
+
+def color_tick_labels(labels, groups, color_map) -> None:
+    """Warnai teks tick (objek ``Text``) menurut grup: ``groups[i]`` untuk ``labels[i]``."""
+    for text, group in zip(labels, groups):
+        color = color_map.get(group)
+        if color is not None:
+            text.set_color(color)
+
+
+def group_colors(groups) -> dict:
+    """Peta grup -> warna palet (urutan kemunculan), grup Native selalu ``COLOR_NATIVE``."""
+    from chemflow.analytics.group_stats import NATIVE_GROUP
+
+    mapping, index = {}, 0
+    for group in groups:
+        if group in mapping:
+            continue
+        if group == NATIVE_GROUP:
+            mapping[group] = COLOR_NATIVE
+            continue
+        mapping[group] = PALETTE[index % len(PALETTE)]
+        index += 1
+    return mapping
 
 
 def normalize_formats(formats: Sequence[str]) -> tuple:

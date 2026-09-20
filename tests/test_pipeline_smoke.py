@@ -1,6 +1,6 @@
 """
 Smoke test wiring pipeline: memvalidasi PipelineConfig, struktur direktori
-output, dan inisialisasi Pipeline TANPA memanggil tool eksternal (OpenBabel/
+output, dan inisialisasi Pipeline tanpa memanggil tool eksternal (OpenBabel/
 Vina/RCSB/ADMETLab3/PubChem), supaya test ini stabil dijalankan di mesin
 mana pun tanpa tool tsb terpasang atau koneksi jaringan.
 

@@ -1,7 +1,8 @@
 """
 chemflow: pipeline untuk preparasi ligan/reseptor, prediksi ADMET &
 sifat fisikokimia, docking AutoDock Vina, penggabungan kompleks, dan
-analisis kemometrik (PCA, HCA, heatmap) berbasis Excel.
+analisis kemometrik (PCA, HCA, heatmap) berbasis Excel, ditambah analisis
+GC-MS opsional (kromatogram, PCA, PLS-DA, skrining alergen).
 
 Dipakai sebagai CLI (``python -m chemflow``) atau diimpor sebagai library:
 
@@ -21,6 +22,7 @@ from chemflow.admet.admet_file import load_admet_rows, read_admet_table
 from chemflow.admet.admet_rules import classify_admet_value
 from chemflow.admet.admetlab_scraper import AdmetLabScraper
 from chemflow.analytics.charts import ChartBuilder
+from chemflow.analytics.group_charts import GroupChartBuilder
 from chemflow.analytics.hca import HcaResult, HierarchicalClustering
 from chemflow.analytics.heatmap import HeatmapBuilder
 from chemflow.analytics.pca import ChemometricPCA, PcaResult
@@ -38,26 +40,32 @@ from chemflow.docking.merge import merge_complex
 from chemflow.docking.rmsd_validation import RedockingValidator, RmsdValidationResult
 from chemflow.docking.vina_manager import VinaReleaseManager
 from chemflow.docking.vina_runner import VinaRunner, resolve_vina_executable
+from chemflow.gcms.analysis import GcmsAnalyzer, GcmsConfig, GcmsResult, run_gcms_analysis
+from chemflow.interaction.biovia_install import BioviaLocator
+from chemflow.interaction.exporter import export_interactions
 from chemflow.io.excel_ligands import LigandRecord, read_ligands
 from chemflow.io.excel_receptors import ReceptorEntry, read_receptors
 from chemflow.io.pdb_fetcher import FetchedReceptor, NativeLigand, fetch_pdb
 from chemflow.io.receptor_config import ReceptorConfigRow, suggest_box_size, write_receptor_config
 from chemflow.io.result_exporter import export_results
 from chemflow.pipeline import Pipeline
+from chemflow.state import RunState
 from chemflow.similarity.biovia_reader import (
     AtomSpec, BiovaInteraction, ProteinLigandContact, filter_protein_ligand,
     parse_atom_spec, read_biovia_interactions,
 )
 from chemflow.similarity.plots import SimilarityPlotter
+from chemflow.similarity.report import SimilarityReport, run_similarity_report
 from chemflow.similarity.similarity import (
     SimilarityAnalyzer, SimilarityResult, compute_similarity, export_similarity_results,
 )
 
-__version__ = "0.1.0"
+__version__ = "2.0.0"
 
 __all__ = [
     "Pipeline",
     "PipelineConfig",
+    "RunState",
     "LigandPreparer",
     "LigandPrepResult",
     "ReceptorPreparer",
@@ -94,6 +102,7 @@ __all__ = [
     "write_receptor_config",
     "export_results",
     "ChartBuilder",
+    "GroupChartBuilder",
     "ChemometricPCA",
     "PcaResult",
     "HierarchicalClustering",
@@ -109,5 +118,13 @@ __all__ = [
     "SimilarityAnalyzer",
     "SimilarityResult",
     "SimilarityPlotter",
+    "SimilarityReport",
+    "run_similarity_report",
     "export_similarity_results",
+    "BioviaLocator",
+    "export_interactions",
+    "GcmsConfig",
+    "GcmsAnalyzer",
+    "GcmsResult",
+    "run_gcms_analysis",
 ]

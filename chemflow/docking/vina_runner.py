@@ -1,7 +1,7 @@
 """
 Runner AutoDock Vina. Jalankan satu docking reseptor-ligan.
 
-Desain kunci: argumen ``--log`` SENGAJA TIDAK dipakai karena tidak
+Desain kunci: argumen ``--log`` sengaja tidak dipakai karena tidak
 didukung Vina versi >1.1.2. Sebagai gantinya, seluruh output stdout
 ditangkap secara streaming (``Popen`` + ``readline()``) dan disimpan
 manual ke file log setelah proses selesai. Cara ini bekerja seragam di
