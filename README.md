@@ -28,6 +28,18 @@ hasilnya, lalu membuat tabel, grafik siap publikasi, dan analisis statistik.
 Anda tidak perlu bisa coding. Panduan ini ditulis untuk pengguna yang belum
 pernah memakai terminal.
 
+## Video tutorial
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=QM-KQ9XpmWk" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.youtube.com/vi/QM-KQ9XpmWk/maxresdefault.jpg" alt="Video tutorial chemflow" width="720">
+  </a>
+</div>
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=QM-KQ9XpmWk" target="_blank" rel="noopener noreferrer"> Putar video tutorial chemflow</a>
+</p>
+
 ## Tentang
 
 chemflow merangkai seluruh alur skrining virtual dalam satu perintah:
