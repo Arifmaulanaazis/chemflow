@@ -60,7 +60,7 @@ from chemflow.similarity.similarity import (
     SimilarityAnalyzer, SimilarityResult, compute_similarity, export_similarity_results,
 )
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 __all__ = [
     "Pipeline",

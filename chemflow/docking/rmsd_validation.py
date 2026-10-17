@@ -42,7 +42,7 @@ class RmsdValidationResult:
 
 
 class RedockingValidator:
-    """Menghitung RMSD antara pose redocking terbaik dan ligan native asli."""
+    """Menghitung RMSD antara suatu pose redocking dan ligan native asli."""
 
     def __init__(self, threshold_good: float = 2.0, threshold_acceptable: float = 3.0,
                  logger: Optional[logging.Logger] = None) -> None:
@@ -51,14 +51,14 @@ class RedockingValidator:
         self._log = logger or logging.getLogger(__name__)
 
     def validate(self, native_pdb_block: str, docked_pose_mol: Any, ligand_label: str) -> RmsdValidationResult:
-        """Hitung RMSD (pada posisi asli, tanpa superposisi) antara pose docking terbaik dan koordinat kristalografi native.
+        """Hitung RMSD (pada posisi asli, tanpa superposisi) antara pose docking dan koordinat kristalografi native.
 
         Args:
             native_pdb_block: blok PDB mentah residu ligan native (langsung
                 dari koordinat kristalografi, tanpa minimisasi atau penambahan H;
                 lihat ``io.pdb_fetcher.NativeLigand.to_pdb_block()``).
             docked_pose_mol: RDKit Mol pose terbaik hasil redocking (dari
-                ``io.pdbqt_reader.read_pdbqt()``, mode 1).
+                ``io.pdbqt_reader.read_pdbqt()``).
             ligand_label: label untuk pelaporan (mis. "STU_A301").
 
         Returns:

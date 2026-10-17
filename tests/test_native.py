@@ -392,10 +392,14 @@ def test_rmsd_validation_membaca_pose_terbaik_hasil_docking_native(make_pipeline
     ]
     rows = pipeline._run_rmsd_validation(_context("R1"), results)
 
-    assert seen["paths"] == [tmp_path / "rep2.pdbqt"]              # replikat dengan afinitas terbaik
+    assert seen["paths"] == [tmp_path / "rep1.pdbqt", tmp_path / "rep2.pdbqt"]
     assert seen["mol"] == "pose:rep2.pdbqt" and seen["label"] == "N3_A1"
-    assert rows == [{"receptor": "R1", "native_ligand": "N3_A1", "rmsd_angstrom": 1.4, "status": "baik",
-                     "redock_affinity": -9.5, "metode": "stub", "catatan": ""}]
+    assert len(rows) == 1
+    assert rows[0]["replicate"] == 1  # Equal RMSD: deterministic replicate/mode tie-break.
+    assert rows[0]["mode"] == 1 and rows[0]["selected_best"]
+    assert rows[0]["redock_affinity"] == -8.0
+    assert rows[0]["rmsd_angstrom"] == 1.4
+
 
 
 def test_rmsd_validation_baris_gagal_bila_native_tak_siap_atau_redocking_gagal(make_pipeline):

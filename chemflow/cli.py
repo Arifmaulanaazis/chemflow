@@ -84,10 +84,10 @@ def _add_init_subparser(sub: argparse._SubParsersAction) -> None:
 
 
 def _add_run_subparser(sub: argparse._SubParsersAction) -> None:
-    p = sub.add_parser("run", help="Jalankan pipeline penuh: preparasi, ADMET, docking, merge, analitik.")
+    p = sub.add_parser("run", help="Pipeline docking penuh atau validasi native saja (--rmsd-only).")
 
     g_input = p.add_argument_group("Input")
-    g_input.add_argument("--ligands", type=Path, required=True, help="Excel data ligan (nama senyawa [+ SMILES opsional]).")
+    g_input.add_argument("--ligands", type=Path, required=False, help="Excel data ligan; wajib kecuali --rmsd-only (diabaikan pada mode tersebut).")
     g_input.add_argument("--receptors", type=Path, required=True, help="Excel data reseptor (kode PDB [+ gridbox opsional]).")
     g_input.add_argument("--output", type=Path, default=Path("chemflow_output"), help="Direktori output.")
 
@@ -135,17 +135,22 @@ def _add_run_subparser(sub: argparse._SubParsersAction) -> None:
     g_native = p.add_argument_group("Ligan native (referensi)")
     g_native.add_argument("--no-native", action="store_true",
                           help="Jangan sertakan ligan native kokristal (redocking, Lipinski, ADMET, dan grup "
-                               "'Native' pada semua analitik).")
+                               "'Native' pada semua analitik). Validasi RMSD tetap memakai native.")
 
     g_rmsd = p.add_argument_group("Validasi RMSD redocking")
     g_rmsd.add_argument("--run-rmsd-validation", action="store_true")
+    g_rmsd.add_argument("--rmsd-only", action="store_true", help="Hanya redock native dan validasi semua pose; --ligands diabaikan.")
+    g_rmsd.add_argument("--rmsd-merge-mode", choices=["best", "all"], default="best",
+                        help="Merge native berdasarkan RMSD minimum atau semua pose (terpisah dari --merge-mode).")
+    g_rmsd.add_argument("--rmsd-interaction-mode", choices=["best", "all"], default="best",
+                        help="Interaksi native dengan RMSD minimum atau semua pose, independen dari merge docking.")
     g_rmsd.add_argument("--rmsd-threshold-good", type=float, default=2.0)
     g_rmsd.add_argument("--rmsd-threshold-acceptable", type=float, default=3.0)
 
     g_sim = p.add_argument_group("Interaksi dan similaritas (BIOVIA)")
     g_sim.add_argument("--similarity", action=argparse.BooleanOptionalAction, default=None,
                        help="Ekspor interaksi tiap kompleks lewat GUI BIOVIA Discovery Studio (diagram 2D dan tabel "
-                            "Non-bond) lalu hitung similaritas terhadap ligan native. Bawaan: otomatis bila Windows dan "
+                            "Non-bond) lalu hitung similaritas terhadap ligan native. Pada --rmsd-only hanya ekspor interaksi RMSD. Bawaan: otomatis bila Windows dan "
                             "BIOVIA terdeteksi; --similarity memaksa, --no-similarity mematikan. Mouse dan keyboard "
                             "dikunci selama ekspor (Esc tiga kali untuk membatalkan).")
     g_sim.add_argument("--biovia-exe", type=Path, default=None,
@@ -156,7 +161,7 @@ def _add_run_subparser(sub: argparse._SubParsersAction) -> None:
                        help="Jangan kunci mouse dan keyboard selama ekspor BIOVIA.")
 
     g_ob = p.add_argument_group("OpenBabel")
-    g_ob.add_argument("--openbabel-path", type=Path, default=None, help="Path manual ke obabel (default: cari di PATH).")
+    g_ob.add_argument("--openbabel-path", type=Path, default=None, help="Path manual ke obabel (default: cache, PATH, lalu lokasi instalasi umum).")
 
     g_admet = p.add_argument_group("ADMET")
     g_admet.add_argument("--no-admet", action="store_true", help="Lewati prediksi ADMET (ADMETLab3).")
@@ -232,6 +237,7 @@ def _add_interactions_subparser(sub: argparse._SubParsersAction) -> None:
     )
     p.add_argument("--output", type=Path, required=True,
                    help="Folder output 'chemflow run' yang berisi complexes/.")
+    p.add_argument("--rmsd", action="store_true", help="Ekspor kompleks validasi RMSD terpisah dari docking utama.")
     p.add_argument("--interactions-dir", type=Path, default=None,
                    help="Folder hasil ekspor (default: <output>/interaksi).")
     p.add_argument("--interaction-suffix", type=str, default="_interaksi.xlsx",
@@ -419,6 +425,8 @@ def _run_pipeline(args: argparse.Namespace) -> int:
         merge_mode=args.merge_mode, include_native=not args.no_native,
         run_similarity=args.similarity, biovia_exe=args.biovia_exe, biovia_launch_timeout=args.biovia_timeout,
         lock_input=not args.no_lock_input,
+        rmsd_only=args.rmsd_only, rmsd_merge_mode=args.rmsd_merge_mode,
+        rmsd_interaction_mode=args.rmsd_interaction_mode,
         run_rmsd_validation=args.run_rmsd_validation, rmsd_threshold_good=args.rmsd_threshold_good,
         rmsd_threshold_acceptable=args.rmsd_threshold_acceptable,
         openbabel_path=args.openbabel_path,
@@ -477,7 +485,8 @@ def _run_interactions(args: argparse.Namespace) -> int:
     print(f"Mengekspor interaksi BIOVIA dari: {args.output}")
     try:
         summary = export_interactions(
-            args.output, args.interactions_dir, executable=args.biovia_exe, launch_timeout=args.biovia_timeout,
+            (args.output / "rmsd" / "interaction_source") if args.rmsd else args.output,
+            args.interactions_dir or (args.output / "rmsd" / "interaksi" if args.rmsd else None), executable=args.biovia_exe, launch_timeout=args.biovia_timeout,
             xlsx_suffix=args.interaction_suffix, receptor=args.receptor, force=args.force,
             show_progress=not args.no_progress, lock_input=False if args.no_lock_input else None,
         )
@@ -592,6 +601,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "list-vina-versions":
         return _run_list_vina_versions()
     if args.command == "run":
+        if args.ligands is None and not args.rmsd_only:
+            parser.error("--ligands wajib kecuali menggunakan --rmsd-only.")
         return _run_pipeline(args)
     if args.command == "resume":
         return _run_resume(args)

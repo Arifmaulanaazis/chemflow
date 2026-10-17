@@ -103,6 +103,10 @@ def discover_jobs(output_dir: "str | Path", interactions_dir: Optional["str | Pa
         )
     root = Path(interactions_dir) if interactions_dir else output_dir / "interaksi"
 
+    manifest = complex_dir / "manifest.json"
+    active = None
+    if manifest.exists():
+        active = set(json.loads(manifest.read_text(encoding="utf-8"))["complexes"])
     jobs: List[InteractionJob] = []
     skipped = 0
     for receptor_dir in sorted(p for p in complex_dir.iterdir() if p.is_dir()):
@@ -110,6 +114,8 @@ def discover_jobs(output_dir: "str | Path", interactions_dir: Optional["str | Pa
             continue
         batch = []
         for pdb_path in receptor_dir.glob("*_complex.pdb"):
+            if active is not None and pdb_path.relative_to(complex_dir).as_posix() not in active:
+                continue
             meta = _read_sidecar(pdb_path)
             if not meta:
                 log.warning(f"Sidecar JSON tidak ada untuk '{pdb_path.name}': ligan dipilih sebagai ligan terakhir BIOVIA.")

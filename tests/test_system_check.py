@@ -14,6 +14,7 @@ def test_check_python_packages_format():
 
 def test_check_openbabel_tidak_ditemukan(monkeypatch):
     monkeypatch.setattr(sc.shutil, "which", lambda name: None)
+    monkeypatch.setattr("chemflow.chem.mol_converter._openbabel_candidates", lambda: iter(()))
     result = sc.check_openbabel()
     assert result.ok is False
     assert "obabel" in result.hint or "openbabel" in result.hint.lower()

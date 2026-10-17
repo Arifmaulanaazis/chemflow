@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chemflow"
-version = "2.0.0"
+version = "2.1.0"
 description = "Pipeline CLI dan library: preparasi ligan/reseptor, ADMET, docking AutoDock Vina, merge kompleks, PCA/HCA/heatmap kemometrik, dan analisis GC-MS opsional."
 readme = "README.md"
 requires-python = ">=3.9"

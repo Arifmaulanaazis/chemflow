@@ -66,13 +66,14 @@ def check_python_packages() -> List[CheckResult]:
 
 
 def check_openbabel() -> CheckResult:
-    """Cek apakah ``obabel`` bisa ditemukan di PATH (wajib diinstal manual oleh pengguna)."""
-    exe = shutil.which("obabel") or shutil.which("obabel.exe")
-    if not exe:
-        return CheckResult(
-            "Tool eksternal", "OpenBabel", False, "tidak ditemukan di PATH",
-            hint="Install dari https://openbabel.org lalu pastikan folder binary-nya ada di PATH sistem.",
-        )
+    """Gunakan resolver yang sama dengan pipeline (cache, PATH, instalasi umum)."""
+    from chemflow.chem.mol_converter import resolve_openbabel_executable
+
+    try:
+        exe = resolve_openbabel_executable()
+    except FileNotFoundError as exc:
+        return CheckResult("Tool eksternal", "OpenBabel", False, str(exc),
+                           hint="Install OpenBabel atau gunakan --openbabel-path pada run pertama.")
     try:
         proc = subprocess.run([exe, "-V"], capture_output=True, text=True, timeout=10)
         version_line = (proc.stdout or proc.stderr or "?").strip().splitlines()[0]

@@ -133,18 +133,21 @@ class Pipeline:
         self._natives: List[NativeEntry] = []
         self._native_errors: Dict[str, str] = {}
         self._reused: Dict[str, int] = {}
+        self._rmsd_candidates: List[Tuple[Dict[str, Any], Any, str]] = []
 
     def run(self) -> int:
         """Jalankan seluruh pipeline. Return 0 sukses, 1 jika gagal total (fatal), 130 jika dihentikan pengguna."""
         try:
             self._begin()
 
-            ligand_records = self._read_and_resolve_ligands()
-            self._stage("preparasi ligan")
-            ligand_results = self._prepare_ligands(ligand_records)
-            lipinski_rows = self._compute_lipinski(ligand_results)
-            self._stage("ADMET")
-            admet_rows = self._run_admet(ligand_results) if self.cfg.run_admet else []
+            ligand_records, ligand_results, lipinski_rows, admet_rows = [], {}, [], []
+            if not self.cfg.rmsd_only:
+                ligand_records = self._read_and_resolve_ligands()
+                self._stage("preparasi ligan")
+                ligand_results = self._prepare_ligands(ligand_records)
+                lipinski_rows = self._compute_lipinski(ligand_results)
+                self._stage("ADMET")
+                admet_rows = self._run_admet(ligand_results) if self.cfg.run_admet else []
 
             vina_exe = resolve_vina_executable(self._vina_manager, version=self.cfg.vina_version,
                                                 explicit_path=self.cfg.vina_executable)
@@ -156,22 +159,42 @@ class Pipeline:
             ligand_pdbqt_map = {name: r.pdbqt_path for name, r in ligand_results.items()}
 
             self._stage("docking")
-            docking_results = orchestrator.run_matrix(
-                ligand_pdbqt_map, targets, self.cfg.docking_dir,
-                n_replicates=self.cfg.n_replicates, exhaustiveness=self.cfg.exhaustiveness,
-                num_modes=self.cfg.num_modes, energy_range=self.cfg.energy_range, base_seed=self.cfg.seed,
-                show_progress=self.cfg.show_progress, resume=self._resume,
-            )
+            docking_results = []
+            if not self.cfg.rmsd_only:
+                docking_results = orchestrator.run_matrix(
+                    ligand_pdbqt_map, targets, self.cfg.docking_dir,
+                    n_replicates=self.cfg.n_replicates, exhaustiveness=self.cfg.exhaustiveness,
+                    num_modes=self.cfg.num_modes, energy_range=self.cfg.energy_range, base_seed=self.cfg.seed,
+                    show_progress=self.cfg.show_progress, resume=self._resume,
+                )
             self._count_reused("run docking", docking_results)
 
             self._stage("ligan native")
             self._natives = self._prepare_natives(rmsd_context, targets)
             native_results = self._dock_natives(orchestrator, targets)
-            native_lipinski, native_admet = self._native_properties()
+            native_lipinski, native_admet = ([], []) if self.cfg.rmsd_only else self._native_properties()
 
             rmsd_rows = []
             if self.cfg.run_rmsd_validation and rmsd_context:
                 rmsd_rows = self._run_rmsd_validation(rmsd_context, native_results)
+                self._merge_rmsd_poses(targets)
+                missing_native = {t.key for t in targets} - rmsd_context.keys()
+                if self.cfg.rmsd_only and missing_native:
+                    raise ValueError(f"Ligan native tidak tersedia untuk: {', '.join(sorted(missing_native))}.")
+                if self.cfg.rmsd_only and (not rmsd_rows or any(r["rmsd_angstrom"] is None for r in rmsd_rows)
+                                          or self.failed_receptors):
+                    raise ValueError("Validasi RMSD tidak lengkap; lihat rmsd/hasil_rmsd.xlsx dan log.")
+            elif self.cfg.rmsd_only:
+                raise ValueError("Tidak ada ligan native untuk validasi RMSD.")
+
+            if self.cfg.rmsd_only:
+                if self._similarity_enabled():
+                    self._stage("interaksi RMSD")
+                    self._run_rmsd_interactions()
+                self._state.update_progress("selesai", finished=True)
+                self.log.info("=== chemflow: validasi RMSD selesai ===")
+                self._log_reused_summary()
+                return 1 if self.failed_interactions else 0
 
             self._stage("merge kompleks")
             self._merge_native_reference(rmsd_context, targets)
@@ -213,6 +236,8 @@ class Pipeline:
                 self._run_gcms()
 
             if self._similarity_enabled():
+                if self.cfg.run_rmsd_validation:
+                    self._run_rmsd_interactions()
                 self._stage("interaksi dan similaritas")
                 self._run_interactions_and_similarity()
 
@@ -289,7 +314,7 @@ class Pipeline:
                 launch_timeout=self.cfg.biovia_launch_timeout, show_progress=self.cfg.show_progress,
                 lock_input=self.cfg.lock_input, logger=self.log,
             )
-            self.failed_interactions = [f"{job.receptor_key}/{job.stem}" for job, _ in summary.failed]
+            self.failed_interactions.extend(f"{job.receptor_key}/{job.stem}" for job, _ in summary.failed)
         except (BioviaUnavailableError, BioviaError, FileNotFoundError) as exc:
             self.log.error(f"Ekspor interaksi BIOVIA dilewati: {exc}")
             self.log.error(f"Similaritas memakai berkas interaksi yang sudah ada di {self.cfg.interactions_dir}.")
@@ -468,7 +493,7 @@ class Pipeline:
             name, smiles, directory, force_field=self.cfg.force_field,
             max_iterations=self.cfg.minimize_max_iters, generate_image=generate_image,
         )
-        lipinski = self._lipinski_row(name, result)
+        lipinski = None if self.cfg.rmsd_only else self._lipinski_row(name, result)
         try:
             save_ligand_prep(directory, result, lipinski, base)
         except Exception as exc:
@@ -761,44 +786,104 @@ class Pipeline:
         return lipinski, admet
 
     def _run_rmsd_validation(self, rmsd_context, native_results: List[DockingRunResult]) -> List[Dict[str, Any]]:
-        """RMSD pose native hasil redocking terhadap struktur kristal (pose terbaik lintas replikat)."""
+        """Evaluate every native pose; rank by RMSD, independently of Vina energy."""
+        import math
+
         validator = RedockingValidator(self.cfg.rmsd_threshold_good, self.cfg.rmsd_threshold_acceptable,
                                         logger=self.log)
-        entry_by_key = {e.receptor_key: e for e in self._natives}
-        rows: List[Dict[str, Any]] = []
-
-        for key, ctx in tqdm(list(rmsd_context.items()), desc="Validasi RMSD redocking", unit="reseptor",
-                              disable=not self.cfg.show_progress):
+        self._rmsd_candidates = []
+        all_rows, summary = [], []
+        entries = {e.receptor_key: e for e in self._natives}
+        for key, ctx in rmsd_context.items():
             native = ctx["native"]
-            try:
-                entry = entry_by_key.get(key)
-                if entry is None:
-                    raise ValueError(self._native_errors.get(key, "Ligan native tidak berhasil disiapkan."))
-                runs = [r for r in native_results if r.ligand_name == entry.name and r.receptor_key == key]
-                good = [r for r in runs if r.success]
-                if not good:
-                    detail = next((r.error for r in runs if r.error), "Redocking tidak menghasilkan pose.")
-                    raise ValueError(detail)
-                best = min(good, key=lambda r: r.best_affinity)
+            entry = entries.get(key)
+            rows = []
+            runs = [r for r in native_results if entry and r.ligand_name == entry.name and r.receptor_key == key]
+            for run in runs:
+                if not run.success:
+                    continue
+                for index, mol in enumerate(read_pdbqt(run.output_pdbqt, logger=self.log), 1):
+                    mode = mol.GetIntProp("_VinaMode") if hasattr(mol, "HasProp") and mol.HasProp("_VinaMode") else index
+                    score = next((p for i, p in enumerate(run.poses, 1) if p.get("mode", i) == mode), {})
+                    result = validator.validate(native.to_pdb_block(), mol, native.label)
+                    valid = result.rmsd is not None and math.isfinite(result.rmsd)
+                    row = {"receptor": key, "native_ligand": native.label, "replicate": run.replicate,
+                           "mode": mode, "seed": run.seed, "rmsd_angstrom": result.rmsd if valid else None,
+                           "status": result.status if valid else "gagal", "redock_affinity": score.get("affinity"),
+                           "metode": result.method, "catatan": result.note, "selected_best": False}
+                    rows.append(row)
+                    if valid:
+                        self._rmsd_candidates.append((row, mol, entry.name))
+            valid_rows = [r for r in rows if r["rmsd_angstrom"] is not None]
+            if valid_rows:
+                best = min(valid_rows, key=lambda r: (r["rmsd_angstrom"], r["replicate"], r["mode"]))
+                best["selected_best"] = True
+                summary.append(dict(best))
+            else:
+                detail = self._native_errors.get(key) or next((r.error for r in runs if r.error),
+                                                              "Tidak ada pose dengan RMSD yang dapat dihitung.")
+                failed = {"receptor": key, "native_ligand": native.label, "rmsd_angstrom": None,
+                          "status": "gagal", "redock_affinity": None, "metode": "-", "catatan": detail}
+                summary.append(failed)
+                if not rows:
+                    rows.append(failed)
+            all_rows.extend(rows)
+        export_results(self.cfg.output_dir / "rmsd" / "hasil_rmsd.xlsx",
+                       ligand_summary_rows=summary, docking_rows=all_rows, rmsd_rows=summary or None,
+                       logger=self.log)
+        return summary
 
-                pose_mols = read_pdbqt(best.output_pdbqt, logger=self.log)
-                if not pose_mols:
-                    raise ValueError("Pose redocking tidak terbaca dari PDBQT.")
+    def _merge_rmsd_poses(self, targets) -> None:
+        """Separate complex sets for RMSD merge and interaction selection."""
+        from rdkit import Chem
+        from chemflow.state import write_json_atomic
 
-                result = validator.validate(native.to_pdb_block(), pose_mols[0], native.label)
-                rows.append({
-                    "receptor": key, "native_ligand": native.label,
-                    "rmsd_angstrom": result.rmsd, "status": result.status,
-                    "redock_affinity": best.best_affinity,
-                    "metode": result.method, "catatan": result.note,
-                })
-            except Exception as exc:
-                self.log.warning(f"Validasi RMSD gagal untuk reseptor '{key}': {exc}")
-                rows.append({"receptor": key, "native_ligand": native.label,
-                              "rmsd_angstrom": None, "status": "gagal", "redock_affinity": None,
-                              "metode": "-", "catatan": str(exc)})
+        by_key = {t.key: t for t in targets}
+        for folder, mode in (("complexes", self.cfg.rmsd_merge_mode),
+                             ("interaction_source/complexes", self.cfg.rmsd_interaction_mode)):
+            active = []
+            root = self.cfg.output_dir / "rmsd" / folder
+            previous = read_json(root / "manifest.json", {}).get("complexes", [])
+            for row, mol, name in self._rmsd_candidates:
+                if mode == "best" and not row["selected_best"]:
+                    continue
+                target = by_key[row["receptor"]]
+                clean = Chem.MolFromPDBFile(str(target.receptor_clean_pdb), sanitize=False, removeHs=True)
+                if clean is None:
+                    raise ValueError(f"Reseptor merge tidak terbaca: {target.key}")
+                stem = f"{name}_rep{row['replicate']:02d}_mode{row['mode']:02d}_complex.pdb"
+                path = self.cfg.output_dir / "rmsd" / folder / target.key / stem
+                merge_complex(clean, mol, path, ligand_name=name, logger=self.log)
+                meta = read_json(path.with_suffix(".json"), {})
+                meta.update({"rmsd_validation": True, "rmsd_angstrom": row["rmsd_angstrom"],
+                             "replicate": row["replicate"], "mode": row["mode"],
+                             "selected_best": row["selected_best"]})
+                write_json_atomic(path.with_suffix(".json"), meta)
+                active.append(path.relative_to(root).as_posix())
+            write_json_atomic(root / "manifest.json", {"complexes": active})
+            # Remove only our own obsolete outputs, verified to stay inside this set.
+            for relative in set(previous) - set(active):
+                obsolete = (root / relative).resolve()
+                if root.resolve() not in obsolete.parents or obsolete.suffix != ".pdb":
+                    continue
+                sidecar = obsolete.with_suffix(".json")
+                if read_json(sidecar, {}).get("rmsd_validation") is True:
+                    obsolete.unlink(missing_ok=True)
+                    sidecar.unlink(missing_ok=True)
 
-        return rows
+    def _run_rmsd_interactions(self) -> None:
+        from chemflow.interaction import BioviaUnavailableError, export_interactions
+        from chemflow.interaction.biovia_gui import BioviaError
+
+        try:
+            summary = export_interactions(
+                self.cfg.output_dir / "rmsd" / "interaction_source", self.cfg.output_dir / "rmsd" / "interaksi",
+                executable=self.cfg.biovia_exe, launch_timeout=self.cfg.biovia_launch_timeout,
+                show_progress=self.cfg.show_progress, lock_input=self.cfg.lock_input, logger=self.log)
+            self.failed_interactions.extend(f"rmsd/{job.receptor_key}/{job.stem}" for job, _ in summary.failed)
+        except (BioviaUnavailableError, BioviaError, FileNotFoundError) as exc:
+            self.log.error(f"Ekspor interaksi RMSD dilewati: {exc}")
+            self.failed_interactions.append("rmsd: " + str(exc))
 
     @staticmethod
     def _is_merged(path) -> bool:

@@ -53,3 +53,10 @@ def test_guess_element_dari_tipe_ad4():
 def test_guess_element_fallback_nama_atom():
     assert _guess_element("Cl1", "") == "Cl"
     assert _guess_element("X", "") == "X"
+
+
+def test_model_id_preserved_after_empty_model(tmp_path):
+    path = tmp_path / 'out.pdbqt'
+    path.write_text('MODEL 1\nENDMDL\nMODEL 2' + _MULTI_POSE_PDBQT.split('MODEL 2', 1)[1])
+    mols = read_pdbqt(path)
+    assert len(mols) == 1 and mols[0].GetIntProp('_VinaMode') == 2

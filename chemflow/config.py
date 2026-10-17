@@ -32,7 +32,7 @@ class PipelineConfig:
     """
 
     # Input
-    ligand_excel: Path
+    ligand_excel: Optional[Path]
     receptor_excel: Path
     output_dir: Path = Path("chemflow_output")
 
@@ -84,11 +84,14 @@ class PipelineConfig:
 
     # Validasi RMSD redocking
     run_rmsd_validation: bool = False
+    rmsd_only: bool = False
+    rmsd_merge_mode: str = "best"
+    rmsd_interaction_mode: str = "best"
     rmsd_threshold_good: float = 2.0        # Angstrom, Hevener et al. 2009 (PMC2788795)
     rmsd_threshold_acceptable: float = 3.0
 
     # OpenBabel
-    openbabel_path: Optional[Path] = None   # override manual; default: cari "obabel" di PATH
+    openbabel_path: Optional[Path] = None   # override manual; default: preferensi tersimpan, PATH, instalasi umum
 
     # ADMET
     run_admet: bool = True
@@ -127,7 +130,15 @@ class PipelineConfig:
     show_progress: bool = True       # progress bar (tqdm) di terminal, di samping log biasa
 
     def __post_init__(self) -> None:
-        self.ligand_excel = Path(self.ligand_excel).resolve()
+        if self.rmsd_only:
+            self.ligand_excel = None
+            self.run_rmsd_validation = True
+            self.run_admet = False
+            self.admet_file = None
+            self.generate_charts = self.run_pca = self.run_hca = self.run_heatmap = False
+            self.gcms_data = ()
+        if self.ligand_excel is not None:
+            self.ligand_excel = Path(self.ligand_excel).resolve()
         self.receptor_excel = Path(self.receptor_excel).resolve()
         self.output_dir = Path(self.output_dir).resolve()
         if self.vina_executable is not None:
@@ -170,7 +181,12 @@ class PipelineConfig:
             raise ValueError(f"exhaustiveness harus >= 1, dapat: {self.exhaustiveness}")
         if self.merge_mode not in ("best", "all"):
             raise ValueError(f"merge_mode harus 'best' atau 'all', dapat: {self.merge_mode!r}")
-        if not self.ligand_excel.exists():
+        for name in ("rmsd_merge_mode", "rmsd_interaction_mode"):
+            if getattr(self, name) not in ("best", "all"):
+                raise ValueError(f"{name} harus 'best' atau 'all'.")
+        if self.rmsd_threshold_good <= 0 or self.rmsd_threshold_acceptable < self.rmsd_threshold_good:
+            raise ValueError("Ambang RMSD harus positif dan acceptable >= good.")
+        if not self.rmsd_only and (self.ligand_excel is None or not self.ligand_excel.exists()):
             raise FileNotFoundError(f"File Excel ligan tidak ditemukan: {self.ligand_excel}")
         if not self.receptor_excel.exists():
             raise FileNotFoundError(f"File Excel reseptor tidak ditemukan: {self.receptor_excel}")

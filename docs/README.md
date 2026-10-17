@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.9 atau lebih baru" src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white"></a>
   <a href="../LICENSE"><img alt="Lisensi MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
-  <a href="../pyproject.toml"><img alt="Versi 2.0.0" src="https://img.shields.io/badge/version-2.0.0-3C71E8"></a>
+  <a href="../pyproject.toml"><img alt="Versi 2.1.0" src="https://img.shields.io/badge/version-2.1.0-3C71E8"></a>
   <img alt="Platform Windows, macOS, dan Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
   <img alt="Docking dengan AutoDock Vina" src="https://img.shields.io/badge/docking-AutoDock%20Vina-8E70EB">
   <img alt="Kemoinformatika dengan RDKit" src="https://img.shields.io/badge/cheminformatics-RDKit-8E70EB">
@@ -21,6 +21,7 @@ referensi teknis lanjutan: diagram alur algoritma tiap tahap pipeline,
 ditulis sebagai Mermaid flowchart (render otomatis di GitHub, GitLab, dan
 kebanyakan editor Markdown).
 
+- [Catatan rilis dan pengujian 2.1.0](release-2.1.0.md)
 - [Alur Utama Pipeline (termasuk Resume dan checkpoint)](pipeline-overview.md)
 - [Preparasi Ligan](ligand-preparation.md)
 - [Preparasi Reseptor](receptor-preparation.md)

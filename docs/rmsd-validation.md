@@ -23,7 +23,7 @@ flowchart TD
     PrepLikeScreening --> Redock[["Redocking sebagai ligan referensi: run_matrix ke reseptornya sendiri, gridbox dan parameter sama, n_replicates sama dengan ligan uji"]]
     Redock --> RedockOk{Redocking sukses dan menghasilkan pose?}
     RedockOk -->|Tidak| FailRedock[["status = gagal, dicatat, reseptor lain tetap lanjut"]]
-    RedockOk -->|Ya| BestPose[Ambil pose mode 1 dari replikat dengan afinitas terbaik]
+    RedockOk -->|Ya| BestPose[Hitung RMSD semua pose semua replikat, pilih RMSD minimum]
     BestPose --> RemoveHs[RemoveHs pada pose dan native: bandingkan heavy-atom saja]
     RemoveHs --> CalcRms[rdMolAlign.CalcRMS: pada posisi asli tanpa superposisi, memperhitungkan simetri, atom-mapping otomatis]
     CalcRms --> CalcRmsOk{Berhasil? Graf molekul cocok}
@@ -70,7 +70,7 @@ koordinat kristal. Templat disimpan di `_cache/ligand_templates/` sehingga
 run berikutnya tidak mengunduh ulang. Jika templat tidak tersedia atau tidak
 cocok, digunakan SMILES dari koordinat dan sebuah peringatan dicatat.
 
-Afinitas hasil redocking (mode 1, replikat terbaik) dicatat pada kolom `redock_affinity`
+Afinitas pose dengan RMSD minimum (mode dan replikat tercatat) dicatat pada kolom `redock_affinity`
 sheet "Validasi RMSD" dan dipakai sebagai afinitas referensi pada analisis
 similaritas interaksi (selisih ΔG).
 
@@ -87,11 +87,33 @@ nama `NATIVE_<label>`):
 3. Lipinski dan ADMET-nya dihitung (ADMET ikut jalur SMILES unik).
 4. Semuanya masuk ke sheet Excel dan seluruh analitik sebagai grup **Native**
    (`--no-native` mematikannya).
-5. Validasi RMSD (`--run-rmsd-validation`) membaca pose terbaik hasil docking native itu
+5. Validasi RMSD (`--run-rmsd-validation`) membaca semua pose hasil docking native itu dan memilih RMSD minimum
    (`docking/<kunci>/NATIVE_<label>/`).
 
 Native untuk jalur Excel dipilih dari ligan terdekat dengan pusat kotak, paling jauh
 `native_match_radius` (default 8 Angstrom); yang lebih jauh dianggap situs berbeda
-(mis. alosterik) dan dilewati dengan peringatan. Hasil docking native tidak di-merge menjadi
-kompleks karena namanya bentrok dengan kompleks kristal referensi `NATIVE_<label>_complex.pdb`.
+(mis. alosterik) dan dilewati dengan peringatan. Hasil redocking native di-merge secara terpisah di `rmsd/complexes/` dengan
+nomor mode dan replikat agar tidak bentrok dengan kompleks kristal referensi
+`NATIVE_<label>_complex.pdb` di folder utama.
 Ligan native dengan label sama pada dua reseptor diberi akhiran kunci reseptor.
+
+
+## Versi 2.1.0
+
+Validasi kini menghitung seluruh pose dan replikat sukses, kemudian memilih RMSD
+minimum per reseptor. Afinitas terendah tidak menentukan pose validasi terbaik.
+Identitas mode dan replikat disimpan bersama afinitas dan metode RMSD.
+
+```bash
+chemflow run --rmsd-only --receptors reseptor.xlsx --output validasi --rmsd-merge-mode best --rmsd-interaction-mode all --no-similarity
+chemflow interactions --output validasi --rmsd
+```
+
+`--rmsd-only` mengabaikan input ligan uji dan melewati ADMET/analitik screening.
+`--run-rmsd-validation` menambahkan validasi yang sama pada pipeline penuh.
+Opsi merge dan interaksi RMSD terpisah dari `--merge-mode` untuk docking utama.
+Keluaran: `rmsd/hasil_rmsd.xlsx`, `rmsd/complexes/`,
+`rmsd/interaction_source/complexes/`, dan `rmsd/interaksi/`.
+`Validasi RMSD` memuat minimum per reseptor, `Hasil Docking` memuat seluruh pose.
+Lihat [panduan versi 2.1.0](../README.md#baru-di-versi-210-validasi-rmsd-mandiri)
+untuk cache Open Babel, resume, dan detail pemilihan pose.

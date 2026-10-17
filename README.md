@@ -11,7 +11,7 @@
 <p align="center">
   <a href="https://www.python.org/downloads/"><img alt="Python 3.9 atau lebih baru" src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white"></a>
   <a href="LICENSE"><img alt="Lisensi MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
-  <a href="pyproject.toml"><img alt="Versi 2.0.0" src="https://img.shields.io/badge/version-2.0.0-3C71E8"></a>
+  <a href="pyproject.toml"><img alt="Versi 2.1.0" src="https://img.shields.io/badge/version-2.1.0-3C71E8"></a>
   <img alt="Platform Windows, macOS, dan Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
   <img alt="Docking dengan AutoDock Vina" src="https://img.shields.io/badge/docking-AutoDock%20Vina-8E70EB">
   <img alt="Kemoinformatika dengan RDKit" src="https://img.shields.io/badge/cheminformatics-RDKit-8E70EB">
@@ -27,6 +27,76 @@ hasilnya, lalu membuat tabel, grafik siap publikasi, dan analisis statistik.
 
 Anda tidak perlu bisa coding. Panduan ini ditulis untuk pengguna yang belum
 pernah memakai terminal.
+
+
+## Baru di versi 2.1.0: validasi RMSD mandiri
+
+[Catatan rilis dan hasil pengujian](docs/release-2.1.0.md).
+
+Jalankan redocking **hanya ligan native**, tanpa Excel ligan uji, ADMET,
+PubChem ligan uji, docking matriks, maupun analitik screening:
+
+```bash
+python -m chemflow run --rmsd-only --receptors reseptor.xlsx --output validasi/ --no-similarity
+```
+
+Jika `--ligands` ikut diberikan, input tersebut diabaikan. Native di-redock hanya ke
+reseptor asalnya dengan gridbox dan parameter Vina yang dipilih. `--no-native`
+tidak menonaktifkan native yang diperlukan untuk validasi. Untuk pipeline penuh,
+tetap gunakan `--run-rmsd-validation` bersama `--ligands` dan `--receptors`.
+
+RMSD dihitung untuk **semua pose dari semua replikat sukses** terhadap koordinat
+kristal tanpa superposisi. `best` pada validasi berarti RMSD minimum per reseptor,
+berbeda dengan `--merge-mode best` pada screening yang memilih afinitas terendah.
+Jika RMSD sama, nomor replikat lalu mode terkecil menjadi pemecah seri.
+
+```bash
+python -m chemflow run --rmsd-only --receptors reseptor.xlsx --output validasi/ --n-replicates 3 --num-modes 9 --rmsd-merge-mode best --rmsd-interaction-mode all --similarity
+python -m chemflow run --ligands ligan.xlsx --receptors reseptor.xlsx --output hasil/ --run-rmsd-validation --merge-mode best --rmsd-merge-mode all --rmsd-interaction-mode best
+```
+
+| Opsi | Arti dan bawaan |
+| --- | --- |
+| `--rmsd-only` | Jalankan hanya preparasi reseptor/native, redocking, RMSD, dan merge/interaksi RMSD. |
+| `--rmsd-merge-mode best/all` | Merge pose RMSD minimum atau semua pose dengan RMSD terhitung; bawaan `best`. |
+| `--rmsd-interaction-mode best/all` | Pilih kompleks interaksi RMSD secara independen; bawaan `best`. |
+| `--similarity` / `--no-similarity` | Aktifkan/matikan ekspor BIOVIA; pada RMSD-only tidak menjalankan similaritas screening. Bawaan otomatis jika BIOVIA terdeteksi. |
+
+Hasil berada di `<output>/rmsd/`: `hasil_rmsd.xlsx` berisi ringkasan terbaik di
+sheet `Validasi RMSD` dan semua pose di `Hasil Docking`, termasuk RMSD, afinitas,
+mode, replikat, seed, metode, dan `selected_best`. Folder `complexes/` mengikuti
+`--rmsd-merge-mode`; `interaction_source/complexes/` mengikuti
+`--rmsd-interaction-mode`; diagram dan tabel BIOVIA berada di `interaksi/`.
+Kedua set kompleks disiapkan saat run, sehingga interaksi bisa diekspor kemudian:
+
+```bash
+python -m chemflow interactions --output validasi/ --rmsd
+python -m chemflow resume --output validasi/
+```
+
+`manifest.json` mencatat set kompleks aktif agar ekspor ulang tidak mengambil
+pose lama dari run sebelumnya. Kompleks RMSD buatan program yang sudah tidak
+terpilih dibersihkan saat pilihan mode berubah; file lain tetap dipertahankan. Pose tanpa RMSD yang valid tetap dicatat sebagai
+gagal di laporan dan tidak dipilih untuk merge/interaksi. Mode RMSD-only mengembalikan
+kode gagal jika native tidak tersedia atau validasi suatu reseptor gagal.
+
+Open Babel kini dicari berurutan melalui path eksplisit, preferensi tersimpan,
+`PATH`, lalu lokasi instalasi umum (Windows Program Files/registry, conda, paket
+Python Open Babel, dan direktori bin umum). Pencarian ini tidak memindai seluruh
+disk. Instalasi portable di lokasi lain dapat ditentukan sekali:
+
+```bash
+python -m chemflow run --rmsd-only --receptors reseptor.xlsx --output validasi/ --openbabel-path "C:/Program Files/OpenBabel-3.1.1/obabel.exe" --no-similarity
+```
+
+Path yang ditemukan disimpan per pengguna dalam
+`%LOCALAPPDATA%/chemflow/openbabel.json` di Windows, atau
+`${XDG_CONFIG_HOME:-~/.config}/chemflow/openbabel.json` di POSIX. Run berikutnya,
+termasuk `init`, memakai resolver yang sama. Cache yang rusak atau menunjuk file
+yang sudah hilang diabaikan dan pencarian dilanjutkan. Override yang tidak valid
+menampilkan error tanpa mengganti preferensi lama. Folder konfigurasi dapat
+diubah dengan `CHEMFLOW_CONFIG_DIR`; kegagalan menulis cache tidak menggagalkan konversi.
+
 
 ## Video tutorial
 
@@ -51,7 +121,7 @@ protein-ligan.
 | Item | Keterangan |
 |---|---|
 | Nama | chemflow |
-| Versi | 2.0.0 |
+| Versi | 2.1.0 |
 | Antarmuka | CLI (`chemflow` atau `python -m chemflow`) dan library Python |
 | Bahasa | Python 3.9 atau lebih baru |
 | Komponen utama | RDKit, OpenBabel, AutoDock Vina, ADMETLab3 |
@@ -92,7 +162,7 @@ Dokumentasi **chemflow** tersedia dalam format PowerPoint dan PDF untuk memberik
   di-dock ulang dengan parameter yang sama seperti ligan uji, lalu ikut semua
   analitik (ADMET, fisikokimia, ΔG, heatmap, PCA, HCA, radar) sebagai grup
   **Native**.
-- **Validasi RMSD redocking** (opsional): RMSD pose terbaik hasil redocking native
+- **Validasi RMSD redocking** (opsional): RMSD seluruh pose hasil redocking native dan memilih minimum
   dihitung terhadap posisi kristalnya pada koordinat aslinya, tanpa superposisi,
   sehingga pose yang bergeser dari kantong ikat ikut terhitung.
 - **Kompleks protein-ligan**: pose docking digabung dengan reseptor bersih
@@ -193,7 +263,7 @@ Pilih salah satu cara.
    ```
 3. Catat path `obabel.exe` yang muncul. Path ini diberikan ke chemflow lewat
    `--openbabel-path`, atau folder tempat `obabel.exe` berada bisa ditambahkan
-   ke PATH Windows agar opsi itu tidak perlu ditulis.
+   sekali lewat opsi tersebut; path disimpan otomatis untuk run berikutnya.
 
 **Cara B, installer resmi:** unduh dari [openbabel.org](https://openbabel.org),
 jalankan installer, lalu buka Command Prompt baru dan cek dengan `obabel -V`.
@@ -216,7 +286,7 @@ Template dari langkah 2.4 sudah berisi contoh data. Jalankan:
 python -m chemflow run --ligands contoh/ligan_contoh_tidy.xlsx --receptors contoh/reseptor_contoh.xlsx --output hasil_pertama/ --openbabel-path "C:/path/ke/obabel.exe"
 ```
 
-Hapus `--openbabel-path` jika `obabel` sudah ada di PATH. Progress bar muncul
+Setelah path tersimpan, `--openbabel-path` tidak perlu ditulis lagi. Progress bar muncul
 di terminal untuk tiap tahap. Setelah selesai, isi folder `hasil_pertama/`
 dijelaskan di [bagian 7](#7-membaca-hasil).
 
@@ -417,7 +487,7 @@ reseptor dipakai native yang paling dekat dengan pusat kotak (paling jauh 8
 Angstrom, supaya situs alosterik tidak dibandingkan dengan native yang salah).
 Matikan dengan `--no-native`.
 
-`--run-rmsd-validation` menambahkan penghitungan RMSD dari pose terbaik hasil
+`--run-rmsd-validation` menambahkan penghitungan RMSD seluruh pose hasil
 redocking native. RMSD dihitung terhadap koordinat kristal pada posisi asli, tanpa
 superposisi (`rdMolAlign.CalcRMS`, memperhitungkan simetri molekul). Pose Vina
 berada pada kerangka koordinat yang sama dengan struktur kristal, sehingga pose
@@ -603,7 +673,7 @@ atau indeks retensi, CAS, SMILES). Detail metode, batasan, dan seluruh opsi ada 
 
 | Gejala | Penyebab dan solusi |
 |---|---|
-| `Executable 'obabel' tidak ditemukan di PATH` | OpenBabel belum terpasang atau tidak ada di PATH. Ulangi langkah 2.3 atau tambahkan `--openbabel-path`. |
+| `Executable 'obabel' tidak ditemukan` | Resolver sudah memeriksa preferensi, PATH, dan lokasi instalasi umum. Pasang OpenBabel atau tentukan `--openbabel-path` sekali. |
 | SMILES tidak ditemukan di PubChem | Nama tidak dikenali. Coba nama internasional atau isi kolom `smiles`. |
 | Timeout atau error jaringan | Layanan (RCSB, PubChem, ADMETLab3, GitHub) tidak terjangkau. Coba jaringan lain atau ulangi nanti. |
 | ADMETLab3 membalas 429 atau tidak menjawab | chemflow mencoba ulang otomatis. Jika tetap gagal, gunakan `--admet-file` (bagian 6) atau `--no-admet`. |

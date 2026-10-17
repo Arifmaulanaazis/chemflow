@@ -105,3 +105,44 @@ def test_exit_code_nonzero_raise_value_error(tmp_path, fake_obabel, monkeypatch)
 def test_resolve_openbabel_tidak_ditemukan_raise():
     with pytest.raises(FileNotFoundError):
         mc.resolve_openbabel_executable(Path("path/tidak/ada/obabel.exe"))
+
+
+def test_explicit_path_saved_and_reused_without_search(tmp_path, monkeypatch):
+    exe = tmp_path / 'obabel.exe'
+    exe.touch()
+    assert mc.resolve_openbabel_executable(exe) == str(exe.resolve())
+    monkeypatch.setattr(mc.shutil, 'which', lambda name: pytest.fail('Cache must avoid PATH lookup'))
+    monkeypatch.setattr(mc, '_openbabel_candidates', lambda: pytest.fail('Cache must avoid discovery'))
+    assert mc.resolve_openbabel_executable() == str(exe.resolve())
+
+
+def test_stale_cache_falls_back_to_installation(tmp_path, monkeypatch):
+    old = tmp_path / 'old.exe'
+    old.touch()
+    mc.resolve_openbabel_executable(old)
+    old.unlink()
+    installed = tmp_path / 'OpenBabel-3.1.1' / 'obabel.exe'
+    installed.parent.mkdir()
+    installed.touch()
+    monkeypatch.setattr(mc.shutil, 'which', lambda name: None)
+    monkeypatch.setattr(mc, '_openbabel_candidates', lambda: iter([installed]))
+    assert mc.resolve_openbabel_executable() == str(installed.resolve())
+    assert str(installed).replace('\\', '\\\\') in mc._openbabel_cache_file().read_text()
+
+
+def test_corrupt_cache_and_missing_executable(tmp_path, monkeypatch):
+    cache = mc._openbabel_cache_file()
+    cache.parent.mkdir(parents=True)
+    cache.write_text('{broken')
+    monkeypatch.setattr(mc.shutil, 'which', lambda name: None)
+    monkeypatch.setattr(mc, '_openbabel_candidates', lambda: iter(()))
+    with pytest.raises(FileNotFoundError, match='lokasi instalasi umum'):
+        mc.resolve_openbabel_executable()
+
+
+def test_invalid_override_does_not_use_cached_executable(tmp_path):
+    exe = tmp_path / 'obabel.exe'
+    exe.touch()
+    mc.resolve_openbabel_executable(exe)
+    with pytest.raises(FileNotFoundError, match='path yang diberikan'):
+        mc.resolve_openbabel_executable(tmp_path / 'missing.exe')

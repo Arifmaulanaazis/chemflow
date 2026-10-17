@@ -45,10 +45,16 @@ def read_pdbqt(pdbqt_path: Path, logger: Optional[logging.Logger] = None) -> Lis
         return []
 
     blocks: List[List[str]] = []
+    model_ids = []
+    model_id = 1
     current: List[str] = []
     in_model = False
     for line in text.splitlines():
         if line.startswith("MODEL"):
+            try:
+                model_id = int(line.split()[1])
+            except (ValueError, IndexError):
+                model_id = len(model_ids) + 1
             in_model = True
             current = []
             continue
@@ -56,13 +62,14 @@ def read_pdbqt(pdbqt_path: Path, logger: Optional[logging.Logger] = None) -> Lis
             in_model = False
             if current:
                 blocks.append(current)
+                model_ids.append(model_id)
             continue
         if in_model and line.startswith(("ATOM", "HETATM")):
             current.append(line)
 
     mols: List[Any] = []
     if blocks:
-        for block in blocks:
+        for model_id, block in zip(model_ids, blocks):
             pdb_block = _atoms_to_pdb_block(block)
             mol = Chem.MolFromPDBBlock(pdb_block, sanitize=False, removeHs=False)
             if mol is not None:
@@ -70,6 +77,7 @@ def read_pdbqt(pdbqt_path: Path, logger: Optional[logging.Logger] = None) -> Lis
                     Chem.SanitizeMol(mol, catchErrors=True)
                 except Exception:
                     pass
+                mol.SetIntProp("_VinaMode", model_id)
                 mols.append(mol)
     else:
         # Tak ada blok MODEL sama sekali, coba sebagai file PDB/PDBQT satu-pose.
