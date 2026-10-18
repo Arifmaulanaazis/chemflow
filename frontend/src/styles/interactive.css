@@ -1,0 +1,808 @@
+/* Interaksi aplikasi bersama, kontrol khusus, dan pembaca ilmiah. */
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 11px;
+}
+.mobile-brand .brand-mark {
+  width: 38px;
+  height: 38px;
+}
+.login-story .brand-mark {
+  width: 48px;
+  height: 48px;
+}
+.brand {
+  gap: 8px;
+}
+.mobile-brand {
+  gap: 7px;
+}
+button,
+a,
+summary,
+.badge,
+.select-option {
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.text-button:active,
+.experiment-filters button:active,
+.run-tabs button:active,
+.preview-mode button:active {
+  transform: scale(0.98);
+}
+.run-tabs button,
+.preview-mode button,
+.experiment-filters button {
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.12s;
+}
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 21px;
+  height: 21px;
+  min-height: 21px;
+  padding: 0;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+  background: #fff;
+  border: 1.5px solid #91a8b7;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background-color 0.16s,
+    border-color 0.16s,
+    box-shadow 0.16s;
+  vertical-align: middle;
+}
+.check-field input {
+  margin-top: 1px;
+}
+input[type="checkbox"]::after {
+  content: "";
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
+  transition: transform 0.14s;
+}
+input[type="checkbox"]:checked {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+input[type="checkbox"]:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+input[type="checkbox"]:focus-visible {
+  outline: 3px solid #7ea6e9;
+  outline-offset: 3px;
+}
+input[type="number"] {
+  appearance: textfield;
+}
+input::-webkit-inner-spin-button,
+input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.custom-select {
+  display: block;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.custom-select .select-native {
+  position: absolute !important;
+  opacity: 0;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden;
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid #aebfc9;
+  border-radius: 11px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.select-trigger > span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  line-height: 1.5;
+}
+.select-trigger > svg {
+  flex-shrink: 0;
+  transition: transform 0.18s;
+}
+.select-trigger[aria-expanded="true"] {
+  border-color: #4279cd;
+  box-shadow: 0 0 0 3px #e8f0ff;
+}
+.select-trigger[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+.select-trigger:disabled {
+  cursor: not-allowed;
+  background: #f0f4f7;
+  color: #607785;
+}
+.select-popover {
+  z-index: 150;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border: 1px solid #c6d7e2;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 14px 45px #18334426;
+  transform-origin: top center;
+  scroll-padding: 6px;
+}
+.select-option {
+  padding: 11px 12px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 9px;
+  color: var(--ink);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.select-option.highlighted {
+  background: #edf4fd;
+}
+.select-option[aria-selected="true"] {
+  background: #e8f0ff;
+  color: #194c9e;
+  font-weight: 600;
+}
+.select-option[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.select-check {
+  color: var(--blue);
+  font-weight: 700;
+}
+.select-empty {
+  padding: 15px;
+  font-size: 0.85rem;
+}
+.viewer-toolbar label .custom-select {
+  min-width: 150px;
+}
+.sheet-picker .custom-select {
+  max-width: 260px;
+}
+.pdf-toolbar .custom-select {
+  min-width: 105px;
+}
+summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary::after {
+  content: "";
+  display: block;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+  transition: transform 0.2s;
+  margin-right: 4px;
+}
+summary[aria-expanded="true"]::after {
+  transform: rotate(225deg);
+}
+.disclosure-content > p {
+  font-size: 0.84rem;
+  margin: 10px 0 18px;
+  line-height: 1.65;
+}
+.disclosure-content > .button {
+  margin: 12px 0;
+}
+.disclosure-content {
+  min-width: 0;
+}
+
+.discovery-visual {
+  min-height: 280px;
+  height: auto;
+  overflow: visible;
+}
+
+
+.molecule-caption {
+  bottom: 12px;
+  right: 28px;
+}
+.discovery-hero {
+  isolation: isolate;
+}
+
+.target-viewer {
+  margin: 22px 0;
+  border: 1px solid #cfdee5;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f3f8fa;
+}
+.target-viewer > .section-heading {
+  padding: 18px 18px 14px;
+  margin: 0;
+  gap: 12px;
+}
+.target-viewer h3 {
+  font-size: 1rem;
+}
+.target-viewer .section-heading p {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-top: 6px;
+  max-width: 50ch;
+}
+.native-tag {
+  font-size: 0.75rem;
+  color: #795019;
+  background: #fff0ca;
+  border: 1px solid #ead29b;
+  padding: 5px 9px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+.target-canvas {
+  height: 400px;
+  width: 100%;
+  position: relative;
+  touch-action: none;
+  background: #163344;
+}
+.target-canvas canvas {
+  max-width: 100%;
+}
+.target-viewer > .viewer-toolbar {
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #d6e3e9;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.target-viewer .viewer-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.8rem;
+  min-height: 44px;
+}
+.picked-target {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  font-size: 0.8rem;
+  color: #4d6979;
+  flex-wrap: wrap;
+}
+.picked-target > span {
+  flex: 1;
+  min-width: 130px;
+}
+.picked-target .button {
+  font-size: 0.78rem;
+}
+.box-readout {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px 16px;
+  font-size: 0.75rem;
+  color: #365d6e;
+  flex-wrap: wrap;
+}
+.target-viewer .notice {
+  margin: 15px;
+}
+.library-panel {
+  padding: 26px;
+}
+.library-downloads {
+  display: flex;
+  gap: 10px;
+}
+.library-panel > .section-heading p {
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+.pdf-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.pdf-toolbar > label {
+  font-size: 0.75rem;
+  display: grid;
+  gap: 5px;
+}
+.pdf-toolbar .button {
+  font-size: 0.82rem;
+  padding: 10px 14px;
+}
+.pdf-zoom {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  border: 1px solid #d1dee6;
+  border-radius: 11px;
+}
+.pdf-zoom .button {
+  min-width: 42px;
+  padding: 8px;
+}
+.pdf-scroll {
+  position: relative;
+  width: 100%;
+  min-height: 230px;
+  max-height: 72vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: #dfe8ed;
+  border-radius: 13px;
+  padding: 14px;
+  text-align: center;
+}
+.pdf-scroll canvas {
+  display: block;
+  margin: auto;
+  box-shadow: 0 3px 18px #15364b26;
+  background: #fff;
+  max-width: none;
+}
+.pdf-scroll > [role="status"] {
+  position: absolute;
+  top: 25px;
+  left: 20px;
+  right: 20px;
+  background: #ffffffe6;
+  padding: 12px;
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+.pdf-note {
+  font-size: 0.8rem;
+  margin-top: 12px;
+}
+.citations-panel {
+  padding: 26px;
+}
+.citation-list {
+  padding: 0;
+  list-style: none;
+  counter-reset: references;
+  margin: 24px 0;
+}
+.citation-list li {
+  position: relative;
+  counter-increment: references;
+  padding: 22px 0 22px 44px;
+  border-top: 1px solid var(--border);
+}
+.citation-list li::before {
+  content: counter(references);
+  position: absolute;
+  left: 0;
+  top: 23px;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  background: #e9f1fb;
+  color: #285b9b;
+  font-size: 0.8rem;
+  border-radius: 9px;
+}
+.citation-list strong {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  display: block;
+}
+.citation-list p,
+.citation-list a {
+  font-size: 0.83rem;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.citation-list small {
+  display: block;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.citation-note {
+  font-size: 0.8rem;
+  margin-top: 18px;
+  max-width: 80ch;
+}
+.preview-mode {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.preview-mode button {
+  border: 1px solid #c8d7e2;
+  background: white;
+  color: var(--muted);
+  padding: 10px 16px;
+  border-radius: 10px;
+  min-height: 44px;
+  font-size: 0.84rem;
+}
+.preview-mode button[aria-pressed="true"] {
+  color: #1b4e9f;
+  background: #eaf2ff;
+  border-color: #a6c2ec;
+}
+.chart-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+.chart-controls label {
+  font-size: 0.78rem;
+  display: grid;
+  gap: 7px;
+}
+.scientific-chart {
+  min-width: 0;
+}
+.chart-viewport {
+  overflow: auto;
+  width: 100%;
+  border: 1px solid #dce7ed;
+  border-radius: 13px;
+  background: #fbfdff;
+}
+.live-chart {
+  display: block;
+  width: 100%;
+  min-width: 560px;
+  max-height: none;
+}
+.live-chart text {
+  font-family: inherit;
+  font-size: 12px;
+  fill: #496476;
+}
+.live-chart g[role="button"] {
+  cursor: pointer;
+  outline: none;
+}
+.live-chart g[role="button"]:focus-visible {
+  outline: 2px solid #e0a43e;
+  outline-offset: 2px;
+}
+.chart-tooltip {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 16px;
+  background: #f0f6fb;
+  border-radius: 11px;
+  margin-top: 13px;
+  font-size: 0.84rem;
+}
+.chart-tooltip > span {
+  color: #496476;
+}
+.chart-pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.chart-pagination > span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.chart-pagination .button {
+  font-size: 0.78rem;
+  padding: 9px 12px;
+}
+.chart-provenance {
+  font-size: 0.75rem;
+  margin-top: 16px;
+  line-height: 1.6;
+}
+.table-scroll[hidden] {
+  display: none !important;
+}
+@media (max-width: 900px) {
+  .select-popover {
+    z-index: 180;
+  }
+  .sidebar .brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+  .brand {
+    font-size: 1.5rem;
+  }
+}
+@media (max-width: 600px) {
+  .discovery-visual {
+    height: auto;
+    min-height: 235px;
+    overflow: visible;
+    padding: 0 14px 20px;
+  }
+
+
+
+  .molecule-caption {
+    bottom: 7px;
+    left: 25px;
+    font-size: 0.7rem;
+  }
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+  .mobile-brand .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+  .target-canvas {
+    height: 330px;
+  }
+  .target-viewer > .section-heading {
+    display: block;
+  }
+  .native-tag {
+    display: inline-block;
+    margin-top: 12px;
+  }
+  .target-viewer .viewer-toolbar .button {
+    font-size: 0.75rem;
+    padding: 10px 12px;
+  }
+  .box-readout {
+    font-size: 0.7rem;
+    gap: 8px;
+  }
+  .picked-target {
+    font-size: 0.78rem;
+  }
+  .library-panel,
+  .citations-panel {
+    padding: 20px 16px;
+  }
+  .library-panel > .section-heading {
+    display: block;
+  }
+  .library-downloads {
+    margin-top: 16px;
+  }
+  .pdf-toolbar {
+    gap: 9px;
+    margin-top: 22px;
+  }
+  .pdf-toolbar > label {
+    flex: 1;
+  }
+  .pdf-toolbar > .button {
+    font-size: 0.72rem;
+    padding: 8px 10px;
+    min-width: 0;
+  }
+  .pdf-zoom {
+    margin: 0 auto;
+  }
+  .pdf-scroll {
+    min-height: 200px;
+    max-height: 65vh;
+    padding: 10px;
+  }
+  .pdf-note {
+    font-size: 0.75rem;
+  }
+  .citations-panel > .section-heading {
+    align-items: flex-start;
+  }
+  .citation-list li {
+    padding-left: 36px;
+  }
+  .citation-list strong {
+    font-size: 0.88rem;
+  }
+  .citation-list p,
+  .citation-list a {
+    font-size: 0.78rem;
+  }
+  .chart-controls {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .chart-controls .select-trigger {
+    font-size: 0.85rem;
+  }
+  .chart-tooltip {
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.8rem;
+  }
+  .chart-pagination {
+    gap: 8px;
+  }
+  .chart-pagination > span {
+    font-size: 0.7rem;
+  }
+  .chart-pagination .button {
+    padding: 8px 10px;
+  }
+  .select-trigger {
+    font-size: 0.87rem;
+  }
+  .mobile-menu[open] .custom-select {
+    max-width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+
+  button,
+  a,
+  summary,
+  .badge,
+  .select-option,
+  input[type="checkbox"],
+  input[type="checkbox"]::after {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+
+  .experiment-list li {
+    grid-template-columns: 38px minmax(0, 1fr) 44px;
+  }
+  .experiment-list .row-open {
+    min-width: 44px;
+  }
+}
+
+.mobile-copy {
+  display: none;
+}
+@media (max-width: 600px) {
+  .overview-heading > div > p,
+  .discovery-copy .lab-label,
+  .desktop-copy,
+  .molecule-caption {
+    display: none;
+  }
+  .overview-heading {
+    margin-bottom: 20px;
+  }
+  .discovery-copy {
+    padding: 20px 24px 8px;
+  }
+  .discovery-copy h2 {
+    font-size: 1.85rem;
+    letter-spacing: -1px;
+  }
+  .discovery-copy > p {
+    font-size: 0.84rem;
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+  .mobile-copy {
+    display: inline;
+  }
+  .hero-actions {
+    margin-top: 16px;
+    gap: 10px 16px;
+  }
+  .hero-actions > .button {
+    min-height: 46px;
+  }
+  .discovery-visual {
+    min-height: 190px;
+    padding: 0 12px 14px;
+  }
+
+
+
+}
+/* Studio molekul transparan yang tetap terkandung di setiap breakpoint. */
+.hero-molecule {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  padding: 0 12px 18px;
+}
+.hero-molecule::before {
+  content: "";
+  position: absolute;
+  inset: 20% 12% 22%;
+  background: radial-gradient(ellipse, #bde2df66, transparent 70%);
+  pointer-events: none;
+}
+.hero-molecule-viewport {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  border-radius: 24px;
+  cursor: grab;
+  outline-offset: -4px;
+}
+.hero-molecule-viewport:active { cursor: grabbing; }
+.hero-molecule-viewport:focus-visible { outline: 2px solid #2057bb; }
+.hero-molecule-viewport canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.hero-molecule-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 24px;
+  text-align: center;
+  color: #436572;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  .hero-molecule { padding: 0 4px 8px; }
+  .hero-molecule-viewport { height: 190px; }
+
+}

@@ -1,0 +1,11 @@
+# Copy to your cloudflared configuration; replace the tunnel UUID and hostname.
+tunnel: YOUR_TUNNEL_UUID
+credentials-file: /path/to/YOUR_TUNNEL_UUID.json
+ingress:
+  - hostname: chemflow.example.com
+    service: http://127.0.0.1:8000
+    originRequest:
+      httpHostHeader: chemflow.example.com
+  - service: http_status:404
+# Configure an identity allow policy for this hostname in Cloudflare Access.
+# ChemFlow: --allowed-host chemflow.example.com --secure-cookie

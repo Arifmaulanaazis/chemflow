@@ -102,6 +102,11 @@ def prompt_manual_smiles(name: str) -> Optional[str]:
         RuntimeError: tidak ada terminal interaktif (stdin non-TTY). Pemanggil
             harus menangkap ini dan melewati senyawa tanpa prompt.
     """
+    from chemflow.interaction.web_prompt import enabled, request
+    if enabled():
+        answer = request("smiles", f"Lengkapi SMILES: {name}", compound=name)
+        return answer.get("smiles") or None
+
     if not sys.stdin.isatty():
         raise RuntimeError(
             "Fallback SMILES manual diminta, tapi tidak ada terminal interaktif "

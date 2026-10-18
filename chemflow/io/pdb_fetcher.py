@@ -180,6 +180,10 @@ def interactive_select_native_ligand(
     Raises:
         RuntimeError: dipanggil tanpa terminal interaktif (non-TTY).
     """
+    from chemflow.interaction.web_prompt import enabled, native_gridbox
+    if enabled():
+        return native_gridbox(receptor, default_size, padding)
+
     if not sys.stdin.isatty():
         raise RuntimeError(
             "Pemilihan gridbox interaktif diminta, tapi tidak ada terminal interaktif "

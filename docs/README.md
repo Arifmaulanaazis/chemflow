@@ -5,9 +5,9 @@
 <h1 align="center">Dokumentasi chemflow</h1>
 
 <p align="center">
-  <a href="https://www.python.org/downloads/"><img alt="Python 3.9 atau lebih baru" src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white"></a>
+  <a href="https://www.python.org/downloads/"><img alt="Python 3.10 atau lebih baru" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white"></a>
   <a href="../LICENSE"><img alt="Lisensi MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
-  <a href="../pyproject.toml"><img alt="Versi 2.1.0" src="https://img.shields.io/badge/version-2.1.0-3C71E8"></a>
+  <a href="../pyproject.toml"><img alt="Versi 3.0.0" src="https://img.shields.io/badge/version-3.0.0-3C71E8"></a>
   <img alt="Platform Windows, macOS, dan Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
   <img alt="Docking dengan AutoDock Vina" src="https://img.shields.io/badge/docking-AutoDock%20Vina-8E70EB">
   <img alt="Kemoinformatika dengan RDKit" src="https://img.shields.io/badge/cheminformatics-RDKit-8E70EB">
@@ -41,3 +41,20 @@ AutoDock Vina, validasi RMSD, analitik) dalam satu perintah, dengan analisis GC-
 Arif Maulana Azis dan dirilis dengan lisensi MIT. Ringkasan proyek, versi,
 dan tautan repositori ada di bagian [Tentang](../README.md#tentang) pada
 `README.md`.
+
+
+## WebUI 3.0.0
+
+- [Instalasi, penggunaan, LAN dan Cloudflare Tunnel](webui.md)
+- [Arsitektur modular, API, sesi, antrean dan keamanan](webui-architecture.md)
+- [Sistem desain dan komponen atomic](design/webui.md)
+- [Catatan rilis 3.0.0](release-3.0.0.md)
+- [Pengujian dan batas validasi](testing-3.0.0.md)
+
+- [Inventaris sumber dan keputusan integrasi 3.0.0](source-review-3.0.0.md)
+
+- [Refaktor UX dan pengujian terbaru](testing-webui-refactor.md)
+
+- [Interaksi, viewer, materi, sitasi dan updater otomatis](webui.md#materi-sitasi-dan-grafik)
+- [Pengujian penyempurnaan interaktif](testing-webui-interactive.md)
+- [Pengujian browser nyata (docking, GC-MS, BIOVIA, ponsel)](testing-webui-browser-nyata.md)

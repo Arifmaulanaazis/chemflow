@@ -1,0 +1,38 @@
+import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+test("login studio renders 3D, reveals password and authenticates after an error",async({page},info)=>{
+  const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
+  await page.goto("/");
+  await expect(page.locator(".login-molecule")).toHaveAttribute("data-state","ready");
+  const canvas=page.locator(".login-molecule canvas");
+  await expect(canvas).toBeVisible();
+  expect(await canvas.evaluate((el:any)=>!!el.getContext("webgl2"))).toBe(true);
+  const before=await canvas.screenshot();
+  await page.waitForTimeout(300);
+  expect((await canvas.screenshot()).equals(before)).toBe(false);
+  const field=page.getByLabel("Kata sandi ruang kerja",{exact:true});
+  await field.fill("wrong-password");
+  await page.getByRole("button",{name:"Tampilkan kata sandi"}).click();
+  await expect(field).toHaveAttribute("type","text");
+  await expect(field).toHaveValue("wrong-password");
+  await page.getByRole("button",{name:"Sembunyikan kata sandi"}).click();
+  await expect(field).toHaveAttribute("type","password");
+  expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:`../.cache/login-${info.project.name}.png`,fullPage:info.project.name!=="mobile"});
+  await page.getByRole("button",{name:"Masuk",exact:true}).click();
+  await expect(page.getByRole("alert")).toContainText("Kata sandi tidak cocok");
+  await expect(field).toHaveValue("wrong-password");
+  await expect(field).toHaveAttribute("aria-invalid","true");
+  expect((await new AxeBuilder({page}).analyze()).violations).toEqual([]);
+  await canvas.evaluate((el:any)=>el.getContext("webgl2").getExtension("WEBGL_lose_context").loseContext());
+  await expect(page.getByText("Pratinjau 3D memerlukan WebGL pada browser ini.")).toBeVisible();
+  await field.fill("chemflow-e2e-local-password");
+  await page.getByRole("button",{name:"Masuk",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Ruang kerja",exact:true})).toBeVisible();
+  await expect(page.locator(".login-molecule")).toHaveCount(0);
+  await expect(page.locator(".hero-molecule")).toHaveAttribute("data-state","ready");
+  expect(errors).toEqual([]);
+});

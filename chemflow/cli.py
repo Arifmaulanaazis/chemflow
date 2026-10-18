@@ -54,6 +54,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = p.add_subparsers(dest="command", required=True)
 
+    cite=sub.add_parser("citations",help="Sitasi ChemFlow dan metode ilmiah yang digunakan.")
+    cite.add_argument("--format",choices=["text","bibtex"],default="text")
     _add_init_subparser(sub)
     sub.add_parser(
         "receptor-config",
@@ -66,6 +68,14 @@ def build_parser() -> argparse.ArgumentParser:
     _add_interactions_subparser(sub)
     _add_similarity_subparser(sub)
     _add_gcms_subparser(sub)
+    web = sub.add_parser("web", help="Jalankan WebUI ChemFlow dengan autentikasi.")
+    web.add_argument("--host", default="127.0.0.1")
+    web.add_argument("--port", type=int, default=8000)
+    web.add_argument("--workspace", type=Path, default=Path("chemflow_workspace"))
+    web.add_argument("--allowed-host", action="append", default=[])
+    web.add_argument("--trusted-proxy", action="append", default=[], help="IP reverse proxy tambahan yang dipercaya (tanpa wildcard).")
+    web.add_argument("--import-run", action="append", type=Path, default=[], help="Salin hasil CLI lama ke workspace WebUI.")
+    web.add_argument("--secure-cookie", action="store_true", help="Aktifkan untuk HTTPS / tunnel publik.")
 
     return p
 
@@ -217,6 +227,9 @@ def _add_resume_subparser(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--output", type=Path, required=True,
                    help="Folder output run yang mau dilanjutkan (berisi _state/).")
     p.add_argument("--no-progress", action="store_true", help="Matikan progress bar.")
+    p.add_argument("--no-interactive-gridbox", action="store_true", help="Larang prompt gridbox saat resume.")
+    p.add_argument("--no-pubchem-interactive-fallback", action="store_true", help="Larang prompt SMILES saat resume.")
+    p.add_argument("--admet-ssl-verify", action="store_true", help="Aktifkan verifikasi TLS ADMET saat resume.")
     p.add_argument("--verbose", action="store_true")
     p.add_argument("--log-level", default=None, choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                    help="Ganti level log (default: sama dengan run asli).")
@@ -454,6 +467,16 @@ def _run_resume(args: argparse.Namespace) -> int:
         print(f"  Gagal: {exc}")
         return 1
 
+    from chemflow.interaction.web_prompt import enabled as browser_input_enabled
+    if browser_input_enabled():
+        config.interactive_gridbox = True
+        config.interactive_pubchem_fallback = True
+    if getattr(args, "admet_ssl_verify", False):
+        config.admet_ssl_verify = True
+    if getattr(args, "no_interactive_gridbox", False):
+        config.interactive_gridbox = False
+    if getattr(args, "no_pubchem_interactive_fallback", False):
+        config.interactive_pubchem_fallback = False
     if args.log_level is not None:
         config.log_level = args.log_level
     if args.verbose:
@@ -590,9 +613,29 @@ def _run_gcms(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        from chemflow.auto_update import cli_bootstrap
+        cli_bootstrap(sys.argv[1:])
+    raw=sys.argv[1:] if argv is None else argv
+    if raw and raw[0]=="citations":
+        cited=build_parser().parse_args(raw)
+        if cited.format=="bibtex":
+            from chemflow.citations import render
+            print(render("bibtex"));return 0
     print_banner()
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command == "citations":
+        from chemflow.citations import render
+        print(render(args.format));return 0
+    if args.command == "web":
+        try:
+            from chemflow.web.server import serve
+        except ImportError:
+            print('Pasang dependensi WebUI: pip install -e ".[web]"')
+            return 1
+        return serve(args)
+
 
     if args.command == "init":
         return _run_init(args)

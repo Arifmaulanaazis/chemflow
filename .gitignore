@@ -11,3 +11,40 @@ contoh/
 *.log
 hasil/
 docs/presentasi/
+
+chemflow_workspace/
+frontend/node_modules/
+frontend/playwright-report/
+frontend/test-results/
+
+*.tsbuildinfo
+
+# Rahasia dan kredensial
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+
+# Basis data, sementara, dan cache alat
+*.sqlite3
+*.sqlite3-journal
+*.tmp
+*.bak
+*.swp
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.playwright-mcp/
+.venv/
+venv/
+
+# Editor dan OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+npm-debug.log*

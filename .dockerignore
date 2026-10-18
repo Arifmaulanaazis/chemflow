@@ -1,0 +1,12 @@
+.git
+.cache
+**/__pycache__
+frontend/node_modules
+frontend/test-results
+frontend/playwright-report
+chemflow_workspace
+chemflow_output
+hasil
+build
+dist
+*.egg-info

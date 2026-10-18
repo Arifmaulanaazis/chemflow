@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chemflow"
-version = "2.1.0"
-description = "Pipeline CLI dan library: preparasi ligan/reseptor, ADMET, docking AutoDock Vina, merge kompleks, PCA/HCA/heatmap kemometrik, dan analisis GC-MS opsional."
+version = "3.0.0"
+description = "CLI, WebUI dan library: preparasi ligan/reseptor, ADMET, docking AutoDock Vina, merge kompleks, PCA/HCA/heatmap kemometrik, dan analisis GC-MS opsional."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
     "rdkit>=2023.9.1",
@@ -23,7 +23,7 @@ dependencies = [
     "numpy>=1.24.0",
     "scipy>=1.10.0",
     "tqdm>=4.66.0",
-    "psutil>=5.9; sys_platform == 'win32'",
+    "psutil>=5.9",
     "pywinauto>=0.6.8; sys_platform == 'win32'",
     "pyperclip>=1.8; sys_platform == 'win32'",
 ]
@@ -32,7 +32,8 @@ authors = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=7.4.0"]
+test = ["pytest>=7.4.0", "httpx>=0.27,<1"]
+web = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "packaging>=23", "pydantic>=2.7,<3"]
 
 [project.urls]
 Homepage = "https://github.com/Arifmaulanaazis"
@@ -45,3 +46,7 @@ include = ["chemflow*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+"chemflow.web" = ["static/**/*", "static/*"]
+"chemflow" = ["resources/*.pdf", "resources/*.pptx"]

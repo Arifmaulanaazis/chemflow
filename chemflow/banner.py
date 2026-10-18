@@ -38,7 +38,7 @@ def render_banner() -> str:
     from chemflow import __version__
 
     width = max(len(line) for line in _LOGO_LINES)
-    caption = (f"chemflow v{__version__}", _TAGLINE)
+    caption = (f"chemflow v{__version__}", _TAGLINE, "Sitasi: chemflow citations | BibTeX: chemflow citations --format bibtex")
     return "\n".join([*_LOGO_LINES, "", *(text.center(width).rstrip() for text in caption)])
 
 

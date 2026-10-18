@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://www.python.org/downloads/"><img alt="Python 3.9 atau lebih baru" src="https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white"></a>
+  <a href="https://www.python.org/downloads/"><img alt="Python 3.10 atau lebih baru" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white"></a>
   <a href="LICENSE"><img alt="Lisensi MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
-  <a href="pyproject.toml"><img alt="Versi 2.1.0" src="https://img.shields.io/badge/version-2.1.0-3C71E8"></a>
+  <a href="pyproject.toml"><img alt="Versi 3.0.0" src="https://img.shields.io/badge/version-3.0.0-3C71E8"></a>
   <img alt="Platform Windows, macOS, dan Linux" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey">
   <img alt="Docking dengan AutoDock Vina" src="https://img.shields.io/badge/docking-AutoDock%20Vina-8E70EB">
   <img alt="Kemoinformatika dengan RDKit" src="https://img.shields.io/badge/cheminformatics-RDKit-8E70EB">
@@ -19,7 +19,7 @@
   <a href="docs/README.md"><img alt="Dokumentasi teknis" src="https://img.shields.io/badge/docs-referensi%20teknis-3C71E8"></a>
 </p>
 
-**chemflow** adalah program baris perintah (CLI) untuk skrining virtual senyawa
+**chemflow** mendukung WebUI, baris perintah (CLI), dan library Python untuk skrining virtual senyawa
 obat secara otomatis. Dari dua file Excel (daftar senyawa dan daftar protein
 target), chemflow menyiapkan senyawa dan protein, menghitung sifat fisikokimia
 dan ADMET, menjalankan docking molekuler dengan AutoDock Vina, memvalidasi
@@ -28,6 +28,50 @@ hasilnya, lalu membuat tabel, grafik siap publikasi, dan analisis statistik.
 Anda tidak perlu bisa coding. Panduan ini ditulis untuk pengguna yang belum
 pernah memakai terminal.
 
+
+## Baru di versi 3.0.0: ruang kerja web
+
+WebUI modular untuk desktop/mobile dengan wizard empat langkah, floating bottom
+navbar mobile, input ligan/reseptor langsung, dan form interaksi saat pipeline
+memerlukan SMILES atau gridbox. Eksperimen, antrean dan checkpoint, log live,
+preview molekul NGL (PDB/pose/koordinat/gridbox), plot, tabel dan interaksi,
+unduhan, serta pemantauan CPU/RAM/disk. CLI lama tetap tersedia.
+
+```sh
+python -m pip install -e ".[web]"
+cd frontend
+npm ci
+npm run build
+cd ..
+python -m chemflow web
+```
+
+Buka http://127.0.0.1:8000 dan masuk memakai kata sandi acak yang tercetak pada
+terminal, atau tetapkan `CHEMFLOW_WEB_PASSWORD` (minimal 12 karakter).
+Untuk LAN: `python -m chemflow web --host 0.0.0.0 --allowed-host 192.168.1.20`.
+Untuk tunnel HTTPS gunakan domain eksplisit, `--secure-cookie`, dan kebijakan
+Cloudflare Access. Semua perangkat berbagi workspace satu operator.
+
+[Petunjuk WebUI, LAN dan tunnel](docs/webui.md) ·
+[Arsitektur dan keamanan](docs/webui-architecture.md) ·
+[Catatan rilis 3.0.0](docs/release-3.0.0.md) ·
+[Pengujian rilis](docs/testing-3.0.0.md) ·
+[Pengujian refaktor WebUI](docs/testing-webui-refactor.md)
+
+CLI dan WebUI memasang release stabil GitHub secara otomatis melalui runtime
+terpisah yang diverifikasi; server menunggu antrean kosong sebelum restart.
+Perubahan source lokal menunda update. [Kebijakan updater](docs/webui.md#pembaruan-otomatis-github).
+Materi PDF dapat dibaca langsung di WebUI; PPT/PDF dan BibTeX dapat diunduh.
+Gunakan `chemflow citations` untuk sitasi dari CLI. Viewer workbook reseptor
+menampilkan protein, native dan gridbox yang mengikuti input XYZ; preview tabel
+numerik mendukung grafik interaktif dan ekspor SVG.
+BIOVIA otomatis tetap khusus desktop Windows; WebUI dan preview lintas OS.
+Versi 3.0 memerlukan Python 3.10+; build frontend menggunakan Node.js 22 LTS.
+
+![WebUI ChemFlow 3.0](docs/assets/webui-desktop.png)
+
+[Tampilan mobile](docs/assets/webui-mobile.png) · [Viewer molekuler](docs/assets/webui-molecule.png) · [Wizard](docs/assets/webui-wizard.png).
+Gambar berasal dari pengujian dengan fixture sintetis, bukan hasil penelitian.
 
 ## Baru di versi 2.1.0: validasi RMSD mandiri
 
@@ -123,7 +167,7 @@ protein-ligan.
 | Nama | chemflow |
 | Versi | 2.1.0 |
 | Antarmuka | CLI (`chemflow` atau `python -m chemflow`) dan library Python |
-| Bahasa | Python 3.9 atau lebih baru |
+| Bahasa | Python 3.10 atau lebih baru |
 | Komponen utama | RDKit, OpenBabel, AutoDock Vina, ADMETLab3 |
 | Lisensi | MIT, lihat [`LICENSE`](LICENSE) |
 | Pengembang | Arif Maulana Azis ([@Arifmaulanaazis](https://github.com/Arifmaulanaazis)) |
@@ -215,7 +259,7 @@ Dokumentasi **chemflow** tersedia dalam format PowerPoint dan PDF untuk memberik
 | Apa | Kegunaan | Wajib |
 |---|---|---|
 | Koneksi internet | Mengunduh struktur protein (RCSB), mencari SMILES (PubChem), mengunduh AutoDock Vina (GitHub), dan ADMETLab3 bila tidak memakai file ADMET. | Ya |
-| Python 3.9 atau lebih baru | Bahasa pemrograman yang menjalankan chemflow. | Ya |
+| Python 3.10 atau lebih baru | Bahasa pemrograman yang menjalankan chemflow. | Ya |
 | OpenBabel | Mengubah format struktur kimia. Satu-satunya program yang harus dipasang manual. | Ya |
 | Excel, LibreOffice Calc, atau Google Sheets | Mengisi daftar senyawa dan protein. | Ya |
 | BIOVIA Discovery Studio (Windows) | Ekspor interaksi otomatis untuk analisis similaritas; dijalankan sendiri bila terdeteksi. Versi Visualizer yang gratis cukup. | Tidak |

@@ -1,0 +1,7 @@
+/* Workbench v2: token bersama, shell adaptif, dan form terpandu. Gaya pratinjau
+   tetap di styles.css agar penampil ilmiah yang berat punya gaya yang terpisah. */
+@import "./styles/shell.css";
+@import "./styles/wizard.css";
+
+@import "./styles/interactive.css";
+@import "./styles/login.css";
