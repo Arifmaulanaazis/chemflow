@@ -13,6 +13,7 @@ hasil/
 docs/presentasi/
 
 chemflow_workspace/
+chemflow-page/
 frontend/node_modules/
 frontend/playwright-report/
 frontend/test-results/
