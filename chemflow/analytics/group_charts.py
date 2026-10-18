@@ -238,7 +238,7 @@ class GroupChartBuilder:
             scores = flag_scores_by_group(admet_rows, group_of, category)
             parameters = [r.label for r in rules_by_category(category)
                           if any(r.label in scores.get(g, {}) for g in groups)]
-            if len(parameters) < 3:
+            if len(parameters) < 2:
                 continue
             values = np.array([[scores.get(g, {}).get(p, 0.5) for p in parameters] for g in groups])
 

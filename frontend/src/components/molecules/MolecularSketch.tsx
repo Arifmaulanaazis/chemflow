@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-/** Hero 3D mandiri yang dimuat saat dibutuhkan; penampil hasil tetap independen. */
 export default function MolecularSketch({ variant = "hero" }: { variant?: "hero" | "login" }) {
   const host = useRef<HTMLDivElement>(null);
   const hint = useId();

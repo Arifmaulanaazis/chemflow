@@ -200,8 +200,8 @@ def test_radar_by_category_absorpsi(tmp_path):
     assert paths[0].exists()
 
 
-def test_radar_by_category_kurang_dari_3_parameter_return_kosong(tmp_path):
-    rows = [{"ligand": "A", "hERG": 0.2, "DILI": 0.1}]
+def test_radar_by_category_satu_parameter_return_kosong(tmp_path):
+    rows = [{"ligand": "A", "hERG": 0.2}]
     assert ChartBuilder(tmp_path).radar_by_category(rows, "Toksisitas") == []
 
 
@@ -230,3 +230,15 @@ def test_admet_all_stacked_bars(tmp_path):
     names = {p.name for p in ChartBuilder(tmp_path).admet_all_stacked_bars(_ADMET)}
     assert "admet_klasifikasi_absorpsi.png" in names
     assert "admet_klasifikasi_distribusi.png" in names
+
+
+def test_excretion_two_axis_radar_individual_and_group(tmp_path):
+    from chemflow.analytics.group_charts import GroupChartBuilder
+    rows = [{"ligand": "A", "cl-plasma": 3.0, "t0.5": 10.0},
+            {"ligand": "B", "cl-plasma": 18.0, "t0.5": 0.5}]
+    paths = ChartBuilder(tmp_path, dpi=72).radar_by_category(rows, "Ekskresi")
+    assert len(paths) == 1 and paths[0].stat().st_size > 0
+    groups = GroupChartBuilder(tmp_path / "groups", dpi=72)
+    paths = groups.admet_radars(rows, {"A": "Group A", "B": "Group B"})
+    assert len(paths) == 1 and paths[0].stat().st_size > 0
+    assert "ekskresi" in paths[0].name.lower()

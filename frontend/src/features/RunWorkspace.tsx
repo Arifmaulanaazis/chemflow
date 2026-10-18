@@ -127,7 +127,7 @@ export default function RunWorkspace({
         <code>{job.id.slice(0, 12)}</code>
       </div>
       <InputRequests jobId={job.id} running={job.status === "running"} />
-      <div className="run-progress">
+      <div className="run-progress" aria-live="polite">
         <Clock size={25} aria-hidden="true" />
         <div>
           <strong>
@@ -145,6 +145,14 @@ export default function RunWorkspace({
             {job.stage ||
               "Berkas dan aktivitas akan diperbarui selama proses berjalan."}
           </p>
+          {(active(job) || job.status === "succeeded") && (
+            <div className={`run-progress-track ${job.status} ${job.pending_input ? "waiting" : ""}`}
+              role="progressbar" aria-label="Progres eksperimen" aria-valuemin={0} aria-valuemax={100}
+              aria-valuenow={job.status === "succeeded" ? 100 : undefined}
+              aria-valuetext={job.pending_input ? "Menunggu input" : job.status === "queued" ? "Dalam antrean" : job.status === "succeeded" ? "Selesai" : job.stage || "Sedang diproses"}>
+              <span />
+            </div>
+          )}
         </div>
       </div>
       <div className="run-tabs" role="tablist" aria-label="Tampilan eksperimen">

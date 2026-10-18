@@ -16,11 +16,11 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
       <section className="login-story" aria-label="ChemFlow molecular workspace">
         <div className="brand"><BrandMark />chemflow<span>3.0</span></div>
         <div className="login-copy">
-          <h1>Ruang untuk<br />penemuan berikutnya.</h1>
-          <p>Preparasi, docking, dan analisis molekuler.<br />Satu pipeline. Setiap hasil dapat ditelusuri.</p>
+          <h1>Preparasi, docking,<br />dan analisis molekuler.</h1>
+          <p>Unggah ligan dan reseptor, jalankan perhitungan, lalu tinjau hasil.</p>
           <div className="login-visual"><MolecularSketch variant="login" /></div>
         </div>
-        <span className="login-footer">ChemFlow · Molecular research workspace</span>
+        <span className="login-footer">ChemFlow 3.0.0</span>
       </section>
       <section className="login-form" aria-labelledby="login-heading">
         <motion.div className="login-card" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.35}}>

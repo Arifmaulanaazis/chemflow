@@ -111,23 +111,23 @@ export default function JobComposer({
         ];
       }),
     );
-  const upload = async (file: File) => {
+  const upload = async (file: File, purpose: string) => {
     if (file.size > schema.max_upload_mb * 1024 ** 2)
       throw Error(`Maksimum ${schema.max_upload_mb} MB per berkas.`);
     setPendingOperations((n) => n + 1);
     try {
       const saved = await api<Upload>(
-        `/uploads?filename=${encodeURIComponent(file.name)}`,
+        `/uploads?filename=${encodeURIComponent(file.name)}&purpose=${encodeURIComponent(purpose)}`,
         { method: "POST", body: file },
       );
-      setUploads((v) => [...v, saved]);
+      setUploads((v) => [...v.filter((u) => u.id !== saved.id), saved]);
       return saved;
     } finally {
       setPendingOperations((n) => n - 1);
     }
   };
   const saved = (key: string) => (u: Upload) => {
-    setUploads((v) => [...v, u]);
+    setUploads((v) => [...v.filter((file) => file.id !== u.id), { ...u, purpose: key }]);
     setOptions((v) => ({ ...v, [key]: u.id }));
     setError("");
   };
@@ -139,7 +139,7 @@ export default function JobComposer({
       onChange={(v) => setOptions((old) => ({ ...old, [o.name]: v }))}
       uploads={uploads}
       sourceRun={source}
-      onUpload={upload}
+      onUpload={(file) => upload(file, o.name)}
     />
   );
   const validate = () => {
@@ -228,7 +228,7 @@ export default function JobComposer({
       <div className="page-heading">
         <div>
           <h1>Eksperimen baru</h1>
-          <p>Keputusan yang jelas, satu langkah setiap kali.</p>
+          <p>Pilih alur, siapkan input, lalu atur parameter.</p>
         </div>
         <span className="draft-label">Draf tersimpan di tab ini</span>
       </div>

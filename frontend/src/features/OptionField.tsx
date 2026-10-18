@@ -1,3 +1,4 @@
+import { inputExtensions, inputUploads } from "../lib/uploads";
 import Select from "../components/atoms/Select";
 import { useEffect, useState } from "react";
 import { UploadCloud } from "../components/atoms/Icons";
@@ -270,7 +271,7 @@ export default function OptionField({
             {!o.multiple && (
               <option value="">Pilih berkas yang diunggah</option>
             )}
-            {uploads.map((f) => (
+            {inputUploads(uploads, o.name, value).map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name} ({bytes(f.size)})
               </option>
@@ -282,6 +283,7 @@ export default function OptionField({
             <input
               aria-label={`Unggah ${label}`}
               type="file"
+              accept={inputExtensions(o.name).map((ext) => `.${ext}`).join(",")}
               disabled={busy}
               multiple={o.multiple}
               onChange={async (e) => {

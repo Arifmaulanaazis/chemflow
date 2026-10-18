@@ -148,7 +148,7 @@ describe("composer wizard", () => {
     expect(fetch.mock.calls.some((c) => c[0].endsWith("/jobs"))).toBe(false);
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Siap memulai eksperimen?" }),
+        screen.getByRole("heading", { name: "Tinjau eksperimen" }),
       ).toBeVisible(),
     );
     fireEvent.click(

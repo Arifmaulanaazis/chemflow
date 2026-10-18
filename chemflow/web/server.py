@@ -20,7 +20,7 @@ from chemflow import __version__
 from .jobs import JobManager
 from .schema import schema
 from .security import Auth, COOKIE, check_origin
-from .storage import MAX_UPLOAD, UPLOAD_EXTENSIONS, artifacts, confined, preview
+from .storage import MAX_UPLOAD, UPLOAD_EXTENSIONS, artifacts, confined, preview, docking_gridbox
 from .updates import UpdateChecker
 
 
@@ -169,6 +169,11 @@ def create_app(workspace: Path, password: str, allowed_hosts=None, secure_cookie
             raise HTTPException(404, "Berkas belum tersedia.")
         return target
 
+    @app.get("/api/jobs/{job_id}/gridbox")
+    def get_gridbox(job_id: str, path: str):
+        artifact(job_id, path)
+        return docking_gridbox(manager.output(job_id), path)
+
     @app.get("/api/jobs/{job_id}/preview")
     def get_preview(job_id: str, path: str, sheet: str | None = None):
         return preview(artifact(job_id, path), sheet)
@@ -180,12 +185,25 @@ def create_app(workspace: Path, password: str, allowed_hosts=None, secure_cookie
         return FileResponse(target, filename=target.name, media_type=mimetypes.guess_type(target.name)[0] or "application/octet-stream",
                             content_disposition_type="inline" if inline else "attachment")
 
+    def upload_purpose(path):
+        try:
+            return json.loads(path.with_name(".metadata.json").read_text(encoding="utf-8")).get("purpose")
+        except (OSError, ValueError, AttributeError):
+            return None
+
     @app.get("/api/uploads")
     def uploads():
-        return [{"id": p.parent.name + "/" + p.name, "name": p.name, "size": p.stat().st_size} for p in (workspace / "uploads").glob("*/*") if p.is_file() and p.resolve().is_relative_to(workspace / "uploads")]
+        paths = [p for p in (workspace / "uploads").glob("*/*")
+                 if p.name != ".metadata.json" and p.is_file() and p.resolve().is_relative_to(workspace / "uploads")]
+        return [{"id": p.parent.name + "/" + p.name, "name": p.name,
+                 "size": p.stat().st_size, "purpose": upload_purpose(p)}
+                for p in sorted(paths, key=lambda p: p.stat().st_mtime)]
 
     @app.post("/api/uploads", status_code=201)
-    async def upload(request: Request, filename: str):
+    async def upload(request: Request, filename: str, purpose: str | None = None):
+        file_options = {o["name"] for options in schema().values() for o in options if o["kind"] == "file"}
+        if purpose is not None and purpose not in file_options:
+            raise HTTPException(422, "Jenis input unggahan tidak dikenal.")
         filename = filename.replace("\\", "/").split("/")[-1]
         if not re.fullmatch(r"[\w .()\-]{1,150}", filename) or Path(filename).suffix.lower() not in UPLOAD_EXTENSIONS:
             raise HTTPException(422, "Nama/format berkas tidak didukung.")
@@ -207,7 +225,9 @@ def create_app(workspace: Path, password: str, allowed_hosts=None, secure_cookie
             target.unlink(missing_ok=True)
             folder.rmdir()
             raise
-        return {"id": upload_id + "/" + filename, "name": filename, "size": size}
+        if purpose:
+            (folder / ".metadata.json").write_text(json.dumps({"purpose": purpose}), encoding="utf-8")
+        return {"id": upload_id + "/" + filename, "name": filename, "size": size, "purpose": purpose}
 
     @app.get("/api/resources")
     def resources():

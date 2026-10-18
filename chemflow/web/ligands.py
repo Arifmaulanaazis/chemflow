@@ -1,4 +1,5 @@
 """Input ligan bertipe diubah menjadi workbook yang sama dengan yang dibaca CLI."""
+import json
 import uuid
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
@@ -38,5 +39,6 @@ def router(workspace: Path):
             for cell in sheet[sheet.max_row]:
                 cell.data_type = "s"
         wb.save(path)
-        return {"id": upload_id + "/ligan.xlsx", "name": path.name, "size": path.stat().st_size}
+        path.with_name(".metadata.json").write_text(json.dumps({"purpose": "ligands"}), encoding="utf-8")
+        return {"id": upload_id + "/ligan.xlsx", "name": path.name, "size": path.stat().st_size, "purpose": "ligands"}
     return routes

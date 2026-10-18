@@ -65,3 +65,25 @@ def preview(path: Path, sheet: str | None = None) -> dict:
             text = stream.read(100001)
         return {"kind": "text", "text": text[:100000], "truncated": len(text) > 100000}
     return {"kind": "download"}
+
+
+def docking_gridbox(root: Path, relative: str) -> dict:
+    import json
+    parts = Path(relative).parts
+    prefixes = (("receptors",), ("docking",), ("complexes",),
+                ("rmsd", "complexes"), ("rmsd", "interaction_source", "complexes"))
+    for prefix in prefixes:
+        if parts[:len(prefix)] != prefix or len(parts) <= len(prefix) + 1:
+            continue
+        key = parts[len(prefix)]
+        checkpoint = confined(root, f"receptors/{key}/prepared.json")
+        try:
+            data = json.loads(checkpoint.read_text(encoding="utf-8"))
+            box = data["grid_box"]
+            coordinates = [float(box[f"{kind}_{axis}"]) for kind in ("center", "size") for axis in "xyz"]
+            if not all(math.isfinite(v) for v in coordinates) or any(v <= 0 for v in coordinates[3:]):
+                break
+            return {"coordinates": coordinates, "receptor": key}
+        except (OSError, ValueError, KeyError, TypeError):
+            break
+    return {"coordinates": None, "receptor": None}

@@ -177,7 +177,7 @@ export default function ArtifactBrowser({ jobId }: { jobId: string }) {
         </div>
         <div className="artifact-preview">
           {!selected ? (
-            <Empty icon={<Atom size={40} />} title="Jelajahi hasil eksperimen">
+            <Empty icon={<Atom size={40} />} title="Pilih berkas hasil">
               Pilih struktur untuk preview 3D, plot untuk gambar, atau workbook
               untuk tabel dan interaksi.
             </Empty>

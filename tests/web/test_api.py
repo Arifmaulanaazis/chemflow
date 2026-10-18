@@ -262,3 +262,43 @@ def test_generated_argv_is_accepted_by_cli_parser(tmp_path):
     for command in COMMANDS:
         argv=build_arguments(command, minimal[command], tmp_path, lambda value: tmp_path/value)
         build_parser().parse_args(argv)
+
+
+def test_result_gridbox_matches_receptor_and_source_run(logged, app):
+    job = app.state.manager.create("init", {}, "Gridbox")
+    output = app.state.manager.output(job)
+    for key, center in [("1ABC_R001", 12.5), ("1ABC_R002", -8.0)]:
+        folder = output / "receptors" / key
+        folder.mkdir(parents=True)
+        (folder / "prepared.json").write_text(json.dumps({"grid_box": {
+            "center_x": center, "center_y": 2, "center_z": 3,
+            "size_x": 20, "size_y": 22, "size_z": 24}}))
+        for relative in [f"complexes/{key}/ligand_complex.pdb", f"docking/{key}/ligand/rep01_out.pdbqt",
+                         f"rmsd/complexes/{key}/native_complex.pdb"]:
+            target = output / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("END")
+            response = logged.get(f"/api/jobs/{job}/gridbox", params={"path": relative})
+            assert response.status_code == 200
+            assert response.json()["coordinates"] == [center, 2, 3, 20, 22, 24]
+    resumed = app.state.manager.create("resume", {}, "Resume", source_run=job)
+    path = "complexes/1ABC_R001/ligand_complex.pdb"
+    assert logged.get(f"/api/jobs/{resumed}/gridbox", params={"path": path}).json()["coordinates"][0] == 12.5
+    (output / "unknown.pdb").write_text("END")
+    assert logged.get(f"/api/jobs/{job}/gridbox", params={"path": "unknown.pdb"}).json()["coordinates"] is None
+    assert logged.get(f"/api/jobs/{job}/gridbox", params={"path": "../outside.pdb"}).status_code == 400
+    (output / "receptors/1ABC_R001/prepared.json").write_text("invalid json")
+    assert logged.get(f"/api/jobs/{job}/gridbox", params={"path": path}).json()["coordinates"] is None
+
+
+def test_upload_purpose_survives_reload_and_hides_metadata(logged):
+    response = logged.post("/api/uploads?filename=ligands.xlsx&purpose=ligands", content=b"workbook")
+    assert response.status_code == 201
+    uploaded = response.json()
+    assert uploaded["purpose"] == "ligands"
+    files = logged.get("/api/uploads").json()
+    assert files == [uploaded]
+    assert logged.post("/api/uploads?filename=x.xlsx&purpose=unknown", content=b"workbook").status_code == 422
+    generated = logged.post("/api/ligands", json={"rows": [{"name": "Ethanol", "smiles": "CCO"}]}).json()
+    assert generated["purpose"] == "ligands"
+    assert all(f["purpose"] == "ligands" for f in logged.get("/api/uploads").json())

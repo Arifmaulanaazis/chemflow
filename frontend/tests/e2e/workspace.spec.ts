@@ -42,7 +42,7 @@ test("login, accessible workspace, real CLI job, table, download, navigation", a
   await page.getByLabel("Lewati pemeriksaan dependensi").check();
   await page.getByRole("button", { name: "Lanjutkan", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Siap memulai eksperimen?" }),
+    page.getByRole("heading", { name: "Tinjau eksperimen" }),
   ).toBeVisible();
   await page.screenshot({
     path: `../.cache/webui-review-${info.project.name}.png`,
@@ -76,7 +76,7 @@ test("login, accessible workspace, real CLI job, table, download, navigation", a
     await page.getByRole("button", { name: "Lainnya", exact: true }).click();
   await page.getByRole("link", { name: "Panduan", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Kenali ruang kerja Anda" }),
+    page.getByRole("heading", { name: "Panduan penggunaan" }),
   ).toBeVisible();
   if (info.project.name === "mobile")
     await page.getByRole("button", { name: "Lainnya", exact: true }).click();
@@ -93,7 +93,7 @@ test("upload validation, receptor builder, NGL viewer and geometric controls", a
   page.on("pageerror", (e) => errors.push(e.message));
   await login(page);
   await page.getByRole("link", { name: /^Viewer test fixture/ }).click();
-  await page.getByRole("button").filter({ hasText: "fixture.pdb" }).click();
+  await page.getByRole("button").filter({ hasText: "protein_complex.pdb" }).click();
   await expect(page.getByText("Memuat struktur molekul…")).toBeHidden({
     timeout: 60000,
   });
@@ -103,7 +103,17 @@ test("upload validation, receptor builder, NGL viewer and geometric controls", a
   await page.getByRole("option", { name: "Ball & stick", exact: true }).click();
   await page.getByLabel("Kontak geometrik NGL").check();
   await page.getByLabel("Gridbox", { exact: true }).check();
-  await expect(page.getByLabel("Center X (Å)", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Center X (Å)", { exact: true })).toHaveValue("12.5");
+  await expect(page.getByLabel("Center Y (Å)", { exact: true })).toHaveValue("-8.25");
+  await expect(page.getByLabel("Size Z (Å)", { exact: true })).toHaveValue("24");
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await page.getByRole("combobox", { name: "Representasi molekul" }).click();
+  await page.getByRole("option", { name: "Cartoon + ligan", exact: true }).click();
+  const canvas = await page.locator(".molecule-canvas canvas").boundingBox();
+  await page.mouse.move(canvas!.x + canvas!.width * .4, canvas!.y + canvas!.height * .5);
+  await page.mouse.down();
+  await page.mouse.move(canvas!.x + canvas!.width * .7, canvas!.y + canvas!.height * .7, {steps:12});
+  await page.mouse.up();
   await page.getByRole("button", { name: "Fit", exact: true }).click();
   await page.screenshot({
     path: `../.cache/webui-molecule-${info.project.name}.png`,
@@ -251,7 +261,7 @@ test("mobile menu focus, GC-MS vector input and reduced motion", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: /4 Tinjau & jalankan/ }).click();
   await expect(
-    page.getByRole("heading", { name: "Siap memulai eksperimen?" }),
+    page.getByRole("heading", { name: "Tinjau eksperimen" }),
   ).toBeVisible();
   expect(
     await page.evaluate(

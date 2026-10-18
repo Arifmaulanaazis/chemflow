@@ -53,8 +53,8 @@ export default function OverviewPage({
           <h1>{route === "overview" ? "Ruang kerja" : "Eksperimen Anda"}</h1>
           <p>
             {route === "overview"
-              ? "Selamat datang di laboratorium komputasi Anda."
-              : "Semua perhitungan dan hasil, tersimpan di satu tempat."}
+              ? "Preparasi, docking, dan analisis hasil."
+              : "Daftar run, status proses, dan berkas hasil."}
           </p>
         </div>
         {route !== "overview" && (
@@ -70,15 +70,15 @@ export default function OverviewPage({
             <div className="discovery-copy">
               <span className="lab-label">
                 <Atom size={18} aria-hidden="true" />
-                Molecular workspace
+                Analisis molekuler
               </span>
               <h2>
-                Dari molekul
+                Preparasi molekul
                 <br />
-                menuju temuan.
+                dan docking.
               </h2>
               <p>
-                <span className="desktop-copy">Siapkan bahan, rancang perhitungan, dan jelajahi hasil. Kami memandu setiap langkah eksperimen Anda.</span>
+                <span className="desktop-copy">Siapkan ligan dan reseptor, atur docking, lalu periksa hasilnya.</span>
                 <span className="mobile-copy">Siapkan bahan. Jalankan perhitungan. Jelajahi hasil.</span>
               </p>
               <div className="hero-actions">
@@ -110,7 +110,7 @@ export default function OverviewPage({
           <div>
             <h2>
               {route === "overview"
-                ? "Lanjutkan penelusuran Anda"
+                ? "Eksperimen terbaru"
                 : "Semua eksperimen"}
             </h2>
             <p className="subtle">

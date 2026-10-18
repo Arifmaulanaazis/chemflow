@@ -1,4 +1,3 @@
-/** Set ikon lokal 24px. Stroke dan viewBox yang sama menjaga kontrol atomik tetap konsisten. */
 import type { SVGProps } from "react";
 type Props = SVGProps<SVGSVGElement> & { size?: number };
 const paths: Record<string, string> = {

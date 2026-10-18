@@ -2,6 +2,7 @@
 from __future__ import annotations
 import math
 import re
+import json
 import uuid
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
@@ -60,6 +61,7 @@ def router(workspace: Path):
         path = workspace / "uploads" / upload_id / "reseptor.xlsx"
         rows = [ReceptorConfigRow(r.pdb_code.upper(), r.center, r.size, r.native_ligand) for r in body.rows]
         write_receptor_config(rows, path)
-        return {"id": upload_id + "/reseptor.xlsx", "name": path.name, "size": path.stat().st_size}
+        path.with_name(".metadata.json").write_text(json.dumps({"purpose": "receptors"}), encoding="utf-8")
+        return {"id": upload_id + "/reseptor.xlsx", "name": path.name, "size": path.stat().st_size, "purpose": "receptors"}
 
     return routes

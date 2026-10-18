@@ -10,7 +10,6 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  ShieldCheck,
   Workflow,
 } from "./components/atoms/Icons";
 import { Notice } from "./components/atoms";
@@ -63,7 +62,9 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
     }
   };
   const job = jobs.find((j) => route === `run/${j.id}`);
-  const running = jobs.filter(active).length;
+  const running = jobs.filter((j) => j.status === "running").length;
+  const queued = jobs.filter((j) => j.status === "queued").length;
+  const activeCount = jobs.filter(active).length;
   const nav = [
     { id: "overview", label: "Ruang kerja", icon: LayoutDashboard },
     { id: "experiments", label: "Eksperimen", icon: Workflow },
@@ -96,7 +97,7 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
           <BrandMark />
           chemflow<span>3.0</span>
         </a>
-        <div className="workspace-label">Molecular workspace</div>
+        <div className="workspace-label">Ruang kerja molekuler</div>
         <nav aria-label="Navigasi utama">
           {nav.map((n) => (
             <a
@@ -116,8 +117,8 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
             >
               <n.icon size={19} aria-hidden="true" />
               {n.label}
-              {n.id === "experiments" && running > 0 && (
-                <span className="nav-count">{running}</span>
+              {n.id === "experiments" && activeCount > 0 && (
+                <span className="nav-count" aria-label={`${activeCount} proses aktif`}>{activeCount}</span>
               )}
             </a>
           ))}
@@ -133,7 +134,7 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
             </span>
           </div>
           <small>
-            {resources?.platform || "Server"} · workspace terautentikasi
+            {resources?.platform || "Server"}
           </small>
           <button onClick={logout}>
             <LogOut size={17} aria-hidden="true" />
@@ -163,6 +164,13 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
                 ? "Eksperimen baru"
                 : nav.find((n) => n.id === route)?.label || "Ruang kerja"}
           </span>
+          {(running > 0 || queued > 0) && (
+            <a className="run-status-badge" href="#experiments" aria-live="polite"
+              onClick={(e) => { e.preventDefault(); navigate("experiments"); }}>
+              {running > 0 && <span>{running} berjalan</span>}
+              {queued > 0 && <span>{queued} antre</span>}
+            </a>
+          )}
           <span className="topbar-status">
             <span
               className={`connection-dot ${connected ? "live" : ""}`}
@@ -171,8 +179,6 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
             <span className="connection-label">
               {connected ? "Pemantauan langsung" : "Menyambungkan ulang"}
             </span>
-            <ShieldCheck size={16} aria-hidden="true" />
-            <span className="security-label">Sesi aman</span>
           </span>
         </header>
         <motion.main
@@ -221,7 +227,7 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
               navigate={navigate}
             />
           ) : route === "resources" ? (
-            <ResourcePage resources={resources} running={running} />
+            <ResourcePage resources={resources} running={activeCount} />
           ) : route === "library" ? (
             <LibraryPage />
           ) : route === "guide" ? (
@@ -249,6 +255,7 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
         navigate={navigate}
         onLogout={logout}
         connected={connected}
+        activeCount={activeCount}
       />
     </div>
   );

@@ -15,11 +15,13 @@ export default function BottomNav({
   navigate,
   onLogout,
   connected,
+  activeCount = 0,
 }: {
   route: string;
   navigate: (s: string) => void;
   onLogout: () => void;
   connected: boolean;
+  activeCount?: number;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
@@ -64,7 +66,7 @@ export default function BottomNav({
           <a
             key={n.id}
             href={`#${n.id}`}
-            aria-label={n.full}
+            aria-label={n.id === "experiments" && activeCount ? `${n.full}, ${activeCount} proses aktif` : n.full}
             aria-current={
               route === n.id ||
               (n.id === "new" && route.startsWith("new/")) ||
@@ -81,7 +83,7 @@ export default function BottomNav({
             <span>
               <n.icon size={21} aria-hidden="true" />
             </span>
-            <small>{n.label}</small>
+            <small>{n.label}{n.id === "experiments" && activeCount > 0 && <b className="nav-count">{activeCount}</b>}</small>
           </a>
         ))}
         <button

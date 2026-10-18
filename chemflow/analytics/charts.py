@@ -217,15 +217,14 @@ class ChartBuilder:
         klasifikasi).
 
         Returns:
-            Daftar path PNG, kosong jika kurang dari 3 parameter terskor
-            tersedia pada data (radar butuh minimal 3 sumbu).
+            Daftar path PNG, kosong jika kurang dari 2 parameter terskor tersedia.
         """
         if not admet_rows:
             return []
         available = set().union(*(r.keys() for r in admet_rows))
         rules = [r for r in rules_by_category(category) if r.scored and r.column in available]
-        if len(rules) < 3:
-            self._log.info(f"Radar ADMET '{category}' dilewati: kurang dari 3 parameter terskor tersedia.")
+        if len(rules) < 2:
+            self._log.info(f"Radar ADMET '{category}' dilewati: kurang dari 2 parameter terskor tersedia.")
             return []
 
         scores = []
@@ -381,13 +380,15 @@ class ChartBuilder:
                 if label in pinned:
                     ax.plot(closed, data, marker=pinned_markers[pin_index % 3], markersize=4.0, linewidth=1.9,
                             linestyle=pinned_styles[pin_index % 3], color=COLOR_NATIVE, label=label)
-                    ax.fill(closed, data, color=COLOR_NATIVE, alpha=0.06)
+                    if n_axes > 2:
+                        ax.fill(closed, data, color=COLOR_NATIVE, alpha=0.06)
                     pin_index += 1
                     continue
                 color = PALETTE[color_index % len(PALETTE)]
                 color_index += 1
                 ax.plot(closed, data, marker="o", markersize=3.5, linewidth=1.6, color=color, label=label)
-                ax.fill(closed, data, color=color, alpha=0.08)
+                if n_axes > 2:
+                    ax.fill(closed, data, color=color, alpha=0.08)
 
             ax.set_xticks(angles)
             ax.set_xticklabels(axis_labels, fontsize=8.5)
@@ -398,6 +399,6 @@ class ChartBuilder:
             ax.grid(color="#D5D5D5", linewidth=0.6)
             ax.spines["polar"].set_color("#BBBBBB")
             ax.tick_params(axis="x", pad=16)
-            ax.set_title(title, pad=22)
+            ax.set_title(title + ("\n2 parameter: titik dan garis tanpa area" if n_axes == 2 else ""), pad=22)
             ax.legend(loc="center left", bbox_to_anchor=(1.28, 0.5))
             return self._save(fig, filename)

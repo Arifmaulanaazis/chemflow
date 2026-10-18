@@ -45,7 +45,7 @@ export default function WizardSteps({
       </nav>
       <div className="wizard-tip">
         <ShieldCheck size={22} aria-hidden="true" />
-        <strong>Terhubung ke pipeline yang sama</strong>
+        <strong>Selama proses berjalan</strong>
         <p>
           Input yang dibutuhkan saat proses berjalan akan muncul di browser.
           Hasil tersimpan di server.

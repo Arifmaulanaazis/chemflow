@@ -12,6 +12,12 @@ diperlukan untuk membangun sumber frontend. psutil kini dipasang di semua sistem
 - Pembuat ligan dan reseptor di browser; pertanyaan native/gridbox dan SMILES saat runtime lewat API.
 - Pilihan executable server yang terdaftar dan pencarian versi Vina yang kompatibel.
 - Inspeksi struktur, pose, koordinat, kontak, dan gridbox dengan NGL; bundel lokal yang dimuat saat dibutuhkan.
+- Fit dan Reset memakai batas seluruh struktur agar pita protein tetap masuk layar setelah diputar.
+- Gridbox hasil membaca checkpoint reseptor pada run, termasuk run lanjutan dan kompleks RMSD.
+- Unggahan difilter menurut jenis input dan format; nama berulang diringkas dengan pilihan aktif dipertahankan.
+- Progress bar pada run serta badge jumlah proses berjalan dan antre di navbar desktop/ponsel.
+- Radar ekskresi mendukung dua parameter pada profil ligan dan grup, tanpa mengisi area atau menambah sumbu.
+- Teks antarmuka diringkas menjadi petunjuk penggunaan dan status proses.
 - Pratinjau sheet/tabel workbook, grafik, diagram, dan teks, serta unduhan penuh terautentikasi.
 - Pembacaan CPU, RAM, dan disk dari server komputasi lewat SSE dengan sambung ulang/polling.
 - Hanya localhost secara bawaan; host LAN/publik dan tunnel HTTPS harus dikonfigurasi eksplisit.

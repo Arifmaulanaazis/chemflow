@@ -4,8 +4,8 @@ export default function GuidePage() {
     <>
       <div className="page-heading">
         <div>
-          <h1>Kenali ruang kerja Anda</h1>
-          <p>Perhitungan yang dapat ditelusuri, dari input hingga hasil.</p>
+          <h1>Panduan penggunaan</h1>
+          <p>Input, parameter, pemantauan proses, dan hasil.</p>
         </div>
         <BookOpen size={32} aria-hidden="true" />
       </div>

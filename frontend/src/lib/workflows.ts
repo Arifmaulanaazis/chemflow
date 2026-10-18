@@ -51,14 +51,14 @@ export const stepNames = [
   "Tinjau & jalankan",
 ];
 export const copy = [
-  "Apa yang ingin Anda kerjakan?",
+  "Pilih alur kerja",
   "Siapkan bahan eksperimen.",
   "Sesuaikan perhitungan Anda.",
-  "Siap memulai eksperimen?",
+  "Tinjau eksperimen",
 ];
 export const notes = [
-  "Pilih satu alur. Kami akan menampilkan input yang relevan.",
+  "Pilih jenis perhitungan.",
   "Unggah workbook atau susun data langsung di browser.",
-  "Bawaan CLI sudah terisi sebagai panduan. Ubah hanya yang diperlukan.",
+  "Nilai kosong menggunakan pengaturan bawaan.",
   "Periksa input dan pengaturan sebelum masuk antrean.",
 ];

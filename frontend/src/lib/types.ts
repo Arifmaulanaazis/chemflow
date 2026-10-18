@@ -28,6 +28,7 @@ export interface Artifact {
   extension: string;
 }
 export interface Upload {
+  purpose?: string | null;
   id: string;
   name: string;
   size: number;

@@ -1,10 +1,10 @@
 import { gridShape } from "../lib/gridbox";
 import Select from "../components/atoms/Select";
-import { loadNgl } from "../lib/ngl";
+import { fitStructure, loadNgl } from "../lib/ngl";
 import { useEffect, useRef, useState } from "react";
 import { RotateCcw, Scan, Eye, MousePointer2 } from "../components/atoms/Icons";
 import { Button, Notice } from "../components/atoms";
-import { fileUrl } from "../lib/api";
+import { api, fileUrl } from "../lib/api";
 import type { Artifact } from "../lib/types";
 export default function MoleculeViewer({
   jobId,
@@ -27,7 +27,18 @@ export default function MoleculeViewer({
     [model, setModel] = useState(0),
     [modelCount, setModelCount] = useState(1),
     [box, setBox] = useState(false),
-    [coordinates, setCoordinates] = useState([0, 0, 0, 20, 20, 20]);
+    [coordinates, setCoordinates] = useState<number[] | null>(null),
+    [gridError, setGridError] = useState("");
+  useEffect(() => {
+    let disposed = false;
+    setCoordinates(null);
+    setBox(false);
+    setGridError("");
+    api<{ coordinates: number[] | null }>(`/jobs/${jobId}/gridbox?path=${encodeURIComponent(file.path)}`)
+      .then((data) => { if (!disposed) setCoordinates(data.coordinates); })
+      .catch((e) => { if (!disposed) setGridError(e.message); });
+    return () => { disposed = true; };
+  }, [jobId, file.path]);
   useEffect(() => {
     let cancelled = false;
     let observer: ResizeObserver | undefined;
@@ -46,7 +57,10 @@ export default function MoleculeViewer({
           tooltip: false,
         });
         stage.current = local;
-        observer = new ResizeObserver(() => local.handleResize());
+        observer = new ResizeObserver(() => {
+          local.handleResize();
+          if (stage.current === local) fitStructure(local, component.current);
+        });
         observer.observe(container.current!);
         const response = await fetch(fileUrl(jobId, file.path, false));
         if (!response.ok)
@@ -80,7 +94,7 @@ export default function MoleculeViewer({
           hydrogenBond: true,
           hydrophobic: true,
         });
-        c.autoView();
+        fitStructure(local, c);
         local.signals.clicked.add((p: any) => {
           if (p?.atom) {
             const a = p.atom;
@@ -133,7 +147,7 @@ export default function MoleculeViewer({
       current.removeComponent(grid.current);
       grid.current = null;
     }
-    if (!box) return;
+    if (!box || !coordinates) return;
     loadNgl().then((NGL) => {
       if (cancelled) return;
       const shape = gridShape(NGL, coordinates);
@@ -177,7 +191,7 @@ export default function MoleculeViewer({
             </Select>
           </label>
         )}
-        <Button variant="secondary" onClick={() => stage.current?.autoView()}>
+        <Button variant="secondary" disabled={loading || !!error} onClick={() => fitStructure(stage.current, component.current)}>
           <Scan size={16} aria-hidden="true" />
           Fit
         </Button>
@@ -185,8 +199,9 @@ export default function MoleculeViewer({
           variant="secondary"
           onClick={() => {
             setModel(0);
-            stage.current?.animationControls.rotate([0, 0, 0, 1], 500);
-            stage.current?.autoView();
+            component.current?.setSelection("/0");
+            stage.current?.animationControls.rotate([0, 0, 0, 1], 0);
+            fitStructure(stage.current, component.current);
           }}
         >
           <RotateCcw size={16} aria-hidden="true" />
@@ -225,13 +240,16 @@ export default function MoleculeViewer({
         <label>
           <input
             type="checkbox"
+            disabled={!coordinates}
             checked={box}
             onChange={(e) => setBox(e.target.checked)}
           />
           Gridbox
         </label>
       </div>
-      {box && (
+      {gridError && <Notice>Gridbox: {gridError}</Notice>}
+      {!coordinates && !loading && !gridError && <p className="subtle">Gridbox docking tidak tersedia untuk berkas ini.</p>}
+      {box && coordinates && (
         <div className="gridbox-fields">
           {[
             "Center X",
@@ -250,7 +268,7 @@ export default function MoleculeViewer({
                 value={coordinates[i]}
                 onChange={(e) =>
                   setCoordinates((v) =>
-                    v.map((n, k) => (k === i ? Number(e.target.value) : n)),
+                    v?.map((n, k) => (k === i ? Number(e.target.value) : n)) || null,
                   )
                 }
               />
