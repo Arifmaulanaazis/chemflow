@@ -173,6 +173,8 @@ class ChemometricPCA:
             self._log.info("scikit-learn tidak terpasang, memakai fallback PCA numpy (eigh).")
             scores, evr, loadings = self._pca_numpy(X_scaled, actual_components)
 
+        scores, evr, loadings = self._sanitize_degenerate_components(scores, evr, loadings)
+
         return PcaResult(
             scores=scores, explained_variance_ratio=evr, loadings=loadings, feature_names=feature_names,
             labels=labels, groups=groups, series=list(series) if series else [], scaling=scaling,
@@ -220,16 +222,33 @@ class ChemometricPCA:
             loading_labels = []
             if show_loadings:
                 scale = np.abs(result.scores[:, :2]).max() * 0.8 if result.scores.size else 1.0
+                if scale <= 1e-9:
+                    scale = 1.0
+                loading_pts = [(0.0, 0.0)]
                 for i, feature in enumerate(result.feature_names):
-                    x, y = result.loadings[i, 0] * scale, result.loadings[i, 1] * scale
+                    x, y = float(result.loadings[i, 0] * scale), float(result.loadings[i, 1] * scale)
+                    if np.hypot(x, y) <= 1e-9:
+                        continue
                     ax.annotate("", xy=(x, y), xytext=(0, 0),
                                 arrowprops=dict(arrowstyle="->", color="#777777", alpha=0.8, linewidth=1.0), zorder=2)
                     loading_labels.append(
                         ax.text(x * 1.08, y * 1.08, feature, fontsize=7.5, color="#555555", ha="center", va="center")
                     )
+                    loading_pts.append((x * 1.15, y * 1.15))
+                if len(loading_pts) > 1:
+                    ax.update_datalim(loading_pts)
 
             self._style_axes(ax)
             ax.margins(0.08)
+            ax.autoscale_view()
+            x0, x1 = ax.get_xlim()
+            if abs(x1 - x0) < 1e-6:
+                x_mid = 0.5 * (x0 + x1)
+                ax.set_xlim(x_mid - 1.0, x_mid + 1.0)
+            y0, y1 = ax.get_ylim()
+            if abs(y1 - y0) < 1e-6:
+                y_mid = 0.5 * (y0 + y1)
+                ax.set_ylim(y_mid - 1.0, y_mid + 1.0)
             ax.set_xlabel(self._axis_label(result, 0), fontweight="bold")
             ax.set_ylabel(self._axis_label(result, 1), fontweight="bold")
             ax.set_title(title)
@@ -362,3 +381,20 @@ class ChemometricPCA:
         total = eigvals.sum()
         evr = tuple((eigvals[:n_components] / total).tolist()) if total > 0 else tuple(0.0 for _ in range(n_components))
         return X_scaled @ top, evr, top
+
+    @staticmethod
+    def _sanitize_degenerate_components(
+        scores: np.ndarray, evr: Tuple[float, ...], loadings: np.ndarray
+    ) -> Tuple[np.ndarray, Tuple[float, ...], np.ndarray]:
+        """Bersihkan derau numerik floating-point (~1e-17) pada komponen yang variansinya nol (matriks rank-defisien)."""
+        scores_clean = np.array(scores, dtype=float, copy=True)
+        loadings_clean = np.array(loadings, dtype=float, copy=True)
+        evr_clean = list(evr)
+        for k in range(scores_clean.shape[1]):
+            span = float(np.ptp(scores_clean[:, k])) if scores_clean.shape[0] else 0.0
+            if evr_clean[k] < 1e-12 or span < 1e-9:
+                scores_clean[:, k] = 0.0
+                loadings_clean[:, k] = 0.0
+                evr_clean[k] = 0.0
+        return scores_clean, tuple(evr_clean), loadings_clean
+

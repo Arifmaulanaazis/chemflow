@@ -105,6 +105,29 @@ def clean_axes(ax, *, grid_axis: str = "") -> None:
 _LABEL_OFFSETS = [(6, 5, "left", "bottom"), (6, -5, "left", "top"), (-6, 5, "right", "bottom"), (-6, -5, "right", "top")]
 
 
+def _ensure_finite_axis_span(ax, obstacles: Sequence = (), min_span: float = 1e-6) -> None:
+    """Pastikan batas sumbu tidak kolaps (~0) dan mencakup posisi obstacle teks data."""
+    pts = []
+    for item in obstacles:
+        if hasattr(item, "get_position") and getattr(item, "get_transform", lambda: None)() == ax.transData:
+            pos = item.get_position()
+            if len(pos) == 2:
+                pts.append(pos)
+    if pts:
+        ax.update_datalim(pts)
+        ax.autoscale_view()
+
+    x0, x1 = ax.get_xlim()
+    if not (abs(x1 - x0) >= min_span):
+        x_mid = 0.5 * (x0 + x1) if (x0 == x0 and x1 == x1) else 0.0
+        ax.set_xlim(x_mid - 1.0, x_mid + 1.0)
+
+    y0, y1 = ax.get_ylim()
+    if not (abs(y1 - y0) >= min_span):
+        y_mid = 0.5 * (y0 + y1) if (y0 == y0 and y1 == y1) else 0.0
+        ax.set_ylim(y_mid - 1.0, y_mid + 1.0)
+
+
 def annotate_without_overlap(ax, xs, ys, labels, *, fontsize: float = 8.0, color: str = "#333333",
                              obstacles: Sequence = ()) -> None:
     """Beri label titik dengan posisi yang dipilih agar teks tidak saling menimpa.
@@ -115,6 +138,7 @@ def annotate_without_overlap(ax, xs, ys, labels, *, fontsize: float = 8.0, color
     ``obstacles`` (artis teks yang sudah ada di sumbu). Batas sumbu harus
     sudah final sebelum fungsi ini dipanggil.
     """
+    _ensure_finite_axis_span(ax, obstacles=obstacles)
     fig = ax.figure
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()

@@ -47,22 +47,46 @@ _BACKBONE_CHARGES: Dict[str, float] = {
 _N_TERMINUS_EXTRA: Dict[str, float] = {"H1": 0.1921, "H2": 0.1921, "H3": 0.1921}
 _C_TERMINUS_EXTRA: Dict[str, float] = {"OXT": -0.5679}  # OXT dapat porsi sama dgn O karbonil
 
-# Muatan sidechain representatif untuk residu bermuatan/polar kunci
+# Muatan sidechain united-atom representatif (famili AMBER ff99SB / AutoDock)
+# untuk seluruh 20 residu asam amino standar (H nonpolar tergabung ke atom C).
 _SIDECHAIN_CHARGES: Dict[str, Dict[str, float]] = {
-    "ASP": {"CG": 0.7994, "OD1": -0.8014, "OD2": -0.8014},
-    "GLU": {"CD": 0.8054, "OE1": -0.8188, "OE2": -0.8188},
-    "LYS": {"NZ": -0.3854, "HZ1": 0.3400, "HZ2": 0.3400, "HZ3": 0.3400},
+    "GLY": {},
+    "ALA": {"CB": 0.0000},
+    "VAL": {"CB": 0.0000, "CG1": 0.0000, "CG2": 0.0000},
+    "LEU": {"CB": 0.0000, "CG": 0.0000, "CD1": 0.0000, "CD2": 0.0000},
+    "ILE": {"CB": 0.0000, "CG1": 0.0000, "CG2": 0.0000, "CD1": 0.0000, "CD": 0.0000},
+    "PRO": {"CB": 0.0000, "CG": 0.0000, "CD": 0.0192},
+    "PHE": {"CB": 0.0000, "CG": 0.0000, "CD1": 0.0000, "CD2": 0.0000, "CE1": 0.0000, "CE2": 0.0000, "CZ": 0.0000},
+    "MET": {"CB": 0.0000, "CG": 0.0440, "SD": -0.2737, "CE": 0.0536},
+    "MSE": {"CB": 0.0000, "CG": 0.0440, "SE": -0.2737, "CE": 0.0536},
+    "TRP": {
+        "CB": 0.0000, "CG": -0.0260, "CD1": 0.0402, "CD2": 0.1243,
+        "NE1": -0.3418, "HE1": 0.3412, "CE2": -0.0515, "CE3": 0.0000,
+        "CZ2": 0.0000, "CZ3": 0.0000, "CH2": 0.0000,
+    },
+    "SER": {"CB": 0.2117, "OG": -0.6546, "HG": 0.4275},
+    "THR": {"CB": 0.3654, "OG1": -0.6761, "HG1": 0.4102, "CG2": 0.0000},
+    "ASN": {"CB": 0.0000, "CG": 0.7130, "OD1": -0.5931, "ND2": -0.9191, "HD21": 0.4196, "HD22": 0.4196},
+    "GLN": {"CB": 0.0000, "CG": 0.0000, "CD": 0.6951, "OE1": -0.6086, "NE2": -0.9407, "HE21": 0.4251, "HE22": 0.4251},
+    "TYR": {
+        "CB": 0.0000, "CG": 0.0000, "CD1": 0.0000, "CD2": 0.0000,
+        "CE1": 0.0000, "CE2": 0.0000, "CZ": 0.3226, "OH": -0.5579, "HH": 0.3992,
+    },
+    "ASP": {"CB": -0.0303, "CG": 0.7994, "OD1": -0.8014, "OD2": -0.8014},
+    "GLU": {"CB": 0.0000, "CG": 0.0136, "CD": 0.8054, "OE1": -0.8188, "OE2": -0.8188},
+    "LYS": {"CB": 0.0000, "CG": 0.0187, "CD": 0.0482, "CE": 0.2175, "NZ": -0.3854, "HZ1": 0.3400, "HZ2": 0.3400, "HZ3": 0.3400},
     "ARG": {
+        "CB": 0.0000, "CG": 0.0390, "CD": 0.0486,
         "NE": -0.5295, "HE": 0.3456,
         "CZ": 0.8076,
         "NH1": -0.8627, "HH11": 0.4478, "HH12": 0.4478,
         "NH2": -0.8627, "HH21": 0.4478, "HH22": 0.4478,
     },
-    "CYS": {"SG": -0.1996},        # sistein bebas (tiol, HG hadir)
-    "CYX": {"SG": -0.0984},        # sistein disulfida (HG tidak ada)
-    "HID": {"ND1": -0.3819, "CE1": 0.2057, "NE2": -0.5727, "HD1": 0.3652},
-    "HIE": {"ND1": -0.5432, "CE1": 0.1868, "NE2": -0.2795, "HE2": 0.3324},
-    "HIP": {"ND1": -0.1739, "CE1": -0.0170, "NE2": -0.1717, "HD1": 0.3800, "HE2": 0.3900},
+    "CYS": {"CB": 0.1190, "SG": -0.1996, "HG": 0.1933},        # sistein bebas (tiol, HG hadir)
+    "CYX": {"CB": 0.0984, "SG": -0.0984},                       # sistein disulfida (HG tidak ada)
+    "HID": {"CB": 0.0000, "CG": -0.0266, "ND1": -0.3819, "CE1": 0.2057, "NE2": -0.5727, "CD2": 0.1292, "HD1": 0.3652},
+    "HIE": {"CB": 0.0000, "CG": 0.1868, "ND1": -0.5432, "CE1": 0.1868, "NE2": -0.2795, "CD2": -0.2207, "HE2": 0.3324},
+    "HIP": {"CB": 0.0000, "CG": -0.0012, "ND1": -0.1739, "CE1": -0.0170, "NE2": -0.1717, "CD2": 0.1141, "HD1": 0.3800, "HE2": 0.3900},
 }
 
 
@@ -92,6 +116,8 @@ class KollmanChargeAssigner:
             fallback_gasteiger = self._compute_gasteiger_fallback(mol)
 
         residue_atoms = self._group_by_residue(mol)
+        unmapped_examples: list[str] = []
+        n_fallback = 0
 
         for (chain, resnum), atom_indices in residue_atoms.items():
             names = {idx: self._atom_name(mol, idx) for idx in atom_indices}
@@ -110,29 +136,24 @@ class KollmanChargeAssigner:
                     q = _C_TERMINUS_EXTRA.get(atom_name)
 
                 if q is None:
+                    n_fallback += 1
                     if fallback_gasteiger is not None:
                         q = fallback_gasteiger.get(idx, 0.0)
                     else:
                         q = 0.0
-                        self._log.debug(
-                            f"[Kollman] Residu {resname_raw} {chain}{resnum} atom '{atom_name}' "
-                            f"tidak ada di tabel, fallback charge=0.0."
-                        )
+                        if len(unmapped_examples) < 10:
+                            unmapped_examples.append(f"{resname_raw} {chain}{resnum}:{atom_name}")
 
                 charges[idx] = q
                 mol.GetAtomWithIdx(idx).SetDoubleProp("_KollmanCharge", q)
 
-        n_fallback = sum(
-            1 for idx in charges
-            if self._lookup(
-                self._resolve_protonation_variant(self._residue_name(mol, idx), {}),
-                self._atom_name(mol, idx),
-            ) is None
-        )
         if n_fallback and self._fallback_mode == "zero":
+            sample = ", ".join(unmapped_examples)
+            suffix = f" (contoh: {sample}, ...)" if n_fallback > len(unmapped_examples) else f" ({sample})"
+            self._log.debug(f"[Kollman] {n_fallback} atom di luar tabel memakai fallback charge=0.0{suffix}.")
             self._log.info(
                 f"[Kollman] {n_fallback} atom memakai fallback charge=0.0 "
-                f"(residu nonstandar/atom di luar tabel kurasi, lihat DEBUG log untuk detail per-atom)."
+                f"(residu nonstandar/atom di luar tabel kurasi)."
             )
 
         return charges

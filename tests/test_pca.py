@@ -210,3 +210,25 @@ def test_label_sumbu_bergaya_jurnal():
     label = ChemometricPCA._axis_label(result, 0)
     assert label.startswith("PC1 (") and label.endswith(" %)")
     assert len(label.split("(")[1].split(".")[1].split(" ")[0]) == 2
+
+
+def test_plot_2d_rank1_isomer_identik_tidak_crash_ft2font(tmp_path):
+    """Regresi kasus 2 ligan uji isomer konstitusional (deskriptor Lipinski identik) + 1 ligan native:
+    matriks terpusat ber-rank 1 (variansi PC2 = 0) tidak boleh memicu overflow koordinat FT2Font."""
+    matrix = [
+        [134.175, -0.2354, 2.0, 3.0],
+        [134.175, -0.2354, 2.0, 3.0],
+        [103.121, -0.1901, 2.0, 2.0],
+    ]
+    labels = ["2-Propanol_1_1_-oxybis", "1-Propanol_2-_2-hydroxypropoxy", "NATIVE_ABU_A405"]
+    groups = ["Uji", "Uji", "Native"]
+
+    pca = ChemometricPCA()
+    result = pca.compute(matrix, ["MW", "LogP", "HBD", "HBA"], labels, groups)
+    assert result.n_components == 2
+    assert result.explained_variance_ratio[1] == 0.0
+    assert np.allclose(result.scores[:, 1], 0.0)
+
+    out_path = pca.plot_2d(result, tmp_path / "pca_2d_rank1.png")
+    assert out_path.exists() and out_path.stat().st_size > 0
+

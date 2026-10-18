@@ -56,5 +56,7 @@ dan tautan repositori ada di bagian [Tentang](../README.md#tentang) pada
 - [Refaktor UX dan pengujian terbaru](testing-webui-refactor.md)
 
 - [Interaksi, viewer, materi, sitasi dan updater otomatis](webui.md#materi-sitasi-dan-grafik)
+- [Preview animasi WebUI, urutan 12 tahap, dan cara merekam ulang](webui-preview.md)
 - [Pengujian penyempurnaan interaktif](testing-webui-interactive.md)
 - [Pengujian browser nyata (docking, GC-MS, BIOVIA, ponsel)](testing-webui-browser-nyata.md)
+

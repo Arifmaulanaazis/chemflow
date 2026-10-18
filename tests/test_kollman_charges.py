@@ -95,3 +95,26 @@ def test_disambiguasi_cys_disulfida_tanpa_hg():
     charges = assigner.assign(mol)
     from chemflow.chem.kollman_charges import _SIDECHAIN_CHARGES
     assert charges[0] == pytest.approx(_SIDECHAIN_CHARGES["CYX"]["SG"])
+
+
+def test_sidechain_residu_standar_tercakup_tanpa_fallback(caplog):
+    import logging
+
+    mol = _make_atom_mol([
+        ("C", "SER", 7, "A", "CB", False),
+        ("O", "SER", 7, "A", "OG", False),
+        ("C", "ASN", 8, "A", "CB", False),
+        ("C", "ASN", 8, "A", "CG", False),
+        ("O", "ASN", 8, "A", "OD1", False),
+        ("N", "ASN", 8, "A", "ND2", False),
+        ("C", "MET", 9, "A", "SD", False),
+        ("C", "LEU", 11, "A", "CD1", False),
+        ("O", "TYR", 23, "A", "OH", False),
+    ])
+    with caplog.at_level(logging.DEBUG):
+        charges = KollmanChargeAssigner(fallback_mode="zero").assign(mol)
+    assert charges[1] == pytest.approx(-0.6546)
+    assert charges[4] == pytest.approx(-0.5931)
+    assert charges[8] == pytest.approx(-0.5579)
+    assert not any("memakai fallback charge=0.0" in rec.message for rec in caplog.records)
+

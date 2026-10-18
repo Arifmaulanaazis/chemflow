@@ -92,3 +92,16 @@ def test_judul_figure_tebal_seperti_judul_sumbu():
         text = fig.suptitle("Judul")
         assert text.get_fontweight() == "bold"
         plt.close(fig)
+
+
+def test_annotate_without_overlap_sumbu_degenerat_tidak_overflow():
+    from chemflow.analytics.style import annotate_without_overlap
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    xs = [-1.0, -1.0, 2.0]
+    ys = [9.25e-17, -1.85e-17, 3.70e-17]
+    ax.scatter(xs, ys)
+    obstacle = ax.text(1.13, 1.22, "MW", fontsize=7.5)
+    annotate_without_overlap(ax, xs, ys, ["Lig1", "Lig2", "Native"], obstacles=[obstacle])
+    plt.close(fig)
+
