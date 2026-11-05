@@ -59,9 +59,11 @@ npm-debug.log*
 .chart-data-*/
 /tmp/
 
-# Preprint: hanya PDF jadi yang dilacak; data, skrip, dan berkas penyusun diabaikan
-/preprint/*
-!/preprint/chemflow_preprint.pdf
+# Preprint: hanya PDF jadi di paper/ yang dilacak; sumber, skrip, data, gambar, dan cache build tetap lokal
+/paper/*
+!/paper/chemflow_preprint.pdf
+# Folder lama preprint/ (sisa lokal, tidak dilacak)
+/preprint/
 
 # Berkas desain internal (tidak terhapus dari disk)
 /docs/design/

@@ -30,6 +30,7 @@ chemflow dapat dijalankan lewat WebUI, baris perintah, atau library Python. Masu
 | Lingkungan | Python 3.10+; Node.js 22 hanya untuk membangun ulang frontend |
 | Komponen | RDKit, Open Babel, AutoDock Vina, ADMETLab 3.0 |
 | Materi | [Slide](chemflow.pptx) dan [dokumen PDF](chemflow.pdf) |
+| Preprint | [PDF](paper/chemflow_preprint.pdf) (bahasa Inggris) |
 | Lisensi dan penulis | [MIT](LICENSE); Arif Maulana Azis ([@Arifmaulanaazis](https://github.com/Arifmaulanaazis)) |
 
 Dokumentasi teknis per tahap ada di [docs/](docs/README.md). Riwayat versi ada di [CHANGELOG](CHANGELOG.md).
