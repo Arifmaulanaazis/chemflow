@@ -1,4 +1,4 @@
-# ChemFlow WebUI 3.0.0
+# ChemFlow WebUI 3.1.0
 
 ChemFlow menyediakan CLI, library Python dan ruang kerja web dengan pipeline
 ilmiah yang sama. WebUI menggunakan React/TypeScript, FastAPI dan NGL yang
@@ -175,8 +175,7 @@ kembali. Lihat `install.log` dan **Akses & pembaruan**. Checkout yang memiliki
 perubahan lokal menunda update. `CHEMFLOW_AUTO_UPDATE=0` menonaktifkan pemasangan;
 `CHEMFLOW_UPDATE_HOME` menentukan cache khusus.
 
-Referensi implementasi: [arsitektur](webui-architecture.md),
-[desain](design/webui.md), [pengujian interaktif](testing-webui-interactive.md).
+Referensi implementasi: [arsitektur](webui-architecture.md).
 Referensi primer: [FastAPI lifespan](https://fastapi.tiangolo.com/advanced/events/),
 [NGL](https://nglviewer.org/ngl/api/manual/),
 [Motion reduced motion](https://motion.dev/docs/react-use-reduced-motion),

@@ -33,6 +33,8 @@ export const labels: Record<string, string> = {
   merge_mode: "Pose yang digabung",
   no_native: "Kecualikan ligan native dari analitik",
   run_rmsd_validation: "Sertakan validasi RMSD",
+  rmsd_backend: "Metode RMSD",
+  rmsd_overlay: "Visualisasi RMSD dari BIOVIA",
   rmsd_only: "Validasi RMSD saja",
   rmsd_merge_mode: "Pose native untuk merge RMSD",
   rmsd_interaction_mode: "Pose native untuk interaksi RMSD",

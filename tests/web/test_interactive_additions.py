@@ -75,7 +75,7 @@ def test_update_state_is_visible_without_applying_release(context,monkeypatch):
     monkeypatch.setattr(app.state.updates,'check',lambda:{'status':'current','current':'3.0.0'})
     value=client.get('/api/updates').json()
     assert value['automatic']['mode']=='automatic'
-    assert client.get('/api/session').headers['X-ChemFlow-Version']=='3.0.0'
+    assert client.get('/api/session').headers['X-ChemFlow-Version']=='3.1.0'
 
 
 @pytest.mark.parametrize('success',[True,False])

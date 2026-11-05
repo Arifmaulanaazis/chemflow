@@ -126,6 +126,7 @@ def make_pipeline(tmp_path):
     pd.DataFrame({"pdb_code": ["1AKI"]}).to_excel(receptor, index=False)
 
     def build(**overrides):
+        overrides.setdefault("rmsd_backend", "rdkit")  # Unit tests never drive the installed Windows GUI.
         cfg = PipelineConfig(ligand_excel=ligand, receptor_excel=receptor, output_dir=tmp_path / "out",
                              openbabel_path=ligand, show_progress=False, **overrides)
         return Pipeline(cfg)
@@ -190,7 +191,7 @@ def test_gridbox_memilih_native_terdekat(make_pipeline):
 
 
 def test_gridbox_tanpa_no_native_native_tidak_dikembalikan_tapi_ukuran_tetap_dari_native(make_pipeline):
-    pipeline = make_pipeline(include_native=False)
+    pipeline = make_pipeline(include_native=False, run_rmsd_validation=False)
     box, native = pipeline._resolve_gridbox(_entry(), _fetched(_native(length=15.6)))
     assert native is None and box.size_x == 24.0
 
@@ -277,7 +278,7 @@ def test_prepare_natives_gagal_dicatat_dan_tidak_menghentikan_yang_lain(make_pip
 
 
 def test_prepare_natives_nonaktif_bila_no_native_tanpa_rmsd(make_pipeline):
-    pipeline = make_pipeline(include_native=False)
+    pipeline = make_pipeline(include_native=False, run_rmsd_validation=False)
     assert pipeline._prepare_natives(_context("R1"), [_target("R1")]) == []
 
 

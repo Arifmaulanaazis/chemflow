@@ -786,7 +786,7 @@ class Pipeline:
         return lipinski, admet
 
     def _run_rmsd_validation(self, rmsd_context, native_results: List[DockingRunResult]) -> List[Dict[str, Any]]:
-        """Evaluate every native pose; rank by RMSD, independently of Vina energy."""
+        """Evaluasi setiap pose native dan urutkan menurut RMSD, terpisah dari energi Vina."""
         import math
 
         validator = RedockingValidator(self.cfg.rmsd_threshold_good, self.cfg.rmsd_threshold_acceptable,
@@ -794,47 +794,62 @@ class Pipeline:
         self._rmsd_candidates = []
         all_rows, summary = [], []
         entries = {e.receptor_key: e for e in self._natives}
-        for key, ctx in rmsd_context.items():
-            native = ctx["native"]
-            entry = entries.get(key)
-            rows = []
-            runs = [r for r in native_results if entry and r.ligand_name == entry.name and r.receptor_key == key]
-            for run in runs:
-                if not run.success:
-                    continue
-                for index, mol in enumerate(read_pdbqt(run.output_pdbqt, logger=self.log), 1):
-                    mode = mol.GetIntProp("_VinaMode") if hasattr(mol, "HasProp") and mol.HasProp("_VinaMode") else index
-                    score = next((p for i, p in enumerate(run.poses, 1) if p.get("mode", i) == mode), {})
-                    result = validator.validate(native.to_pdb_block(), mol, native.label)
-                    valid = result.rmsd is not None and math.isfinite(result.rmsd)
-                    row = {"receptor": key, "native_ligand": native.label, "replicate": run.replicate,
-                           "mode": mode, "seed": run.seed, "rmsd_angstrom": result.rmsd if valid else None,
-                           "status": result.status if valid else "gagal", "redock_affinity": score.get("affinity"),
-                           "metode": result.method, "catatan": result.note, "selected_best": False}
-                    rows.append(row)
-                    if valid:
-                        self._rmsd_candidates.append((row, mol, entry.name))
-            valid_rows = [r for r in rows if r["rmsd_angstrom"] is not None]
-            if valid_rows:
-                best = min(valid_rows, key=lambda r: (r["rmsd_angstrom"], r["replicate"], r["mode"]))
-                best["selected_best"] = True
-                summary.append(dict(best))
-            else:
-                detail = self._native_errors.get(key) or next((r.error for r in runs if r.error),
-                                                              "Tidak ada pose dengan RMSD yang dapat dihitung.")
-                failed = {"receptor": key, "native_ligand": native.label, "rmsd_angstrom": None,
-                          "status": "gagal", "redock_affinity": None, "metode": "-", "catatan": detail}
-                summary.append(failed)
-                if not rows:
-                    rows.append(failed)
-            all_rows.extend(rows)
+        from chemflow.docking.rmsd_backend import RmsdBackendSession
+
+        with RmsdBackendSession(self.cfg, validator, self.log) as backend:
+            for key, ctx in rmsd_context.items():
+                native = ctx["native"]
+                entry = entries.get(key)
+                rows = []
+                runs = [r for r in native_results if entry and r.ligand_name == entry.name and r.receptor_key == key]
+                for run in runs:
+                    if not run.success:
+                        continue
+                    for index, mol in enumerate(read_pdbqt(run.output_pdbqt, logger=self.log), 1):
+                        mode = mol.GetIntProp("_VinaMode") if hasattr(mol, "HasProp") and mol.HasProp("_VinaMode") else index
+                        score = next((p for i, p in enumerate(run.poses, 1) if p.get("mode", i) == mode), {})
+                        result = validator.validate(native.to_pdb_block(), mol, native.label)
+                        pose_name = f"{entry.name}_rep{run.replicate:02d}_mode{mode:02d}"
+                        directory = self.cfg.output_dir / "rmsd" / "molecules" / key / pose_name
+                        result, rmsd_details = backend.enhance(
+                            result, native.to_pdb_block(), mol, native.label,
+                            template_smiles=entry.smiles, directory=directory, pose_name=pose_name)
+                        valid = result.rmsd is not None and math.isfinite(result.rmsd)
+                        row = {"receptor": key, "native_ligand": native.label, "replicate": run.replicate,
+                               "mode": mode, "seed": run.seed, "rmsd_angstrom": result.rmsd if valid else None,
+                               "status": result.status if valid else "gagal", "redock_affinity": score.get("affinity"),
+                               "metode": result.method, "catatan": result.note, "selected_best": False,
+                               "is_vina_mode1": mode == 1, **rmsd_details}
+                        rows.append(row)
+                        if valid:
+                            self._rmsd_candidates.append((row, mol, entry.name))
+                valid_rows = [r for r in rows if r["rmsd_angstrom"] is not None]
+                if valid_rows:
+                    best = min(valid_rows, key=lambda r: (r["rmsd_angstrom"], r["replicate"], r["mode"]))
+                    best["selected_best"] = True
+                    scored = [r for r in rows if r["redock_affinity"] is not None]
+                    if scored:
+                        affinity_best = min(scored, key=lambda r: (r["redock_affinity"], r["replicate"], r["mode"]))
+                        best["rmsd_affinity_best_angstrom"] = affinity_best["rmsd_angstrom"]
+                        best["affinity_best_replicate"] = affinity_best["replicate"]
+                        best["affinity_best_mode"] = affinity_best["mode"]
+                    summary.append(dict(best))
+                else:
+                    detail = self._native_errors.get(key) or next((r.error for r in runs if r.error),
+                                                                  "Tidak ada pose dengan RMSD yang dapat dihitung.")
+                    failed = {"receptor": key, "native_ligand": native.label, "rmsd_angstrom": None,
+                              "status": "gagal", "redock_affinity": None, "metode": "-", "catatan": detail}
+                    summary.append(failed)
+                    if not rows:
+                        rows.append(failed)
+                all_rows.extend(rows)
         export_results(self.cfg.output_dir / "rmsd" / "hasil_rmsd.xlsx",
                        ligand_summary_rows=summary, docking_rows=all_rows, rmsd_rows=summary or None,
                        logger=self.log)
         return summary
 
     def _merge_rmsd_poses(self, targets) -> None:
-        """Separate complex sets for RMSD merge and interaction selection."""
+        """Pisahkan kumpulan kompleks untuk merge RMSD dan pemilihan interaksi."""
         from rdkit import Chem
         from chemflow.state import write_json_atomic
 
@@ -857,11 +872,14 @@ class Pipeline:
                 meta = read_json(path.with_suffix(".json"), {})
                 meta.update({"rmsd_validation": True, "rmsd_angstrom": row["rmsd_angstrom"],
                              "replicate": row["replicate"], "mode": row["mode"],
-                             "selected_best": row["selected_best"]})
+                             "selected_best": row["selected_best"],
+                             **{field: row.get(field, "") for field in
+                                ("metode", "rmsd_backend", "native_crystal", "docked_molecule",
+                                 "rmsd_pair", "rmsd_overlay", "biovia_report", "fallback_reason")}})
                 write_json_atomic(path.with_suffix(".json"), meta)
                 active.append(path.relative_to(root).as_posix())
             write_json_atomic(root / "manifest.json", {"complexes": active})
-            # Remove only our own obsolete outputs, verified to stay inside this set.
+            # Hapus hanya keluaran lama milik ChemFlow setelah memeriksa batas direktori.
             for relative in set(previous) - set(active):
                 obsolete = (root / relative).resolve()
                 if root.resolve() not in obsolete.parents or obsolete.suffix != ".pdb":

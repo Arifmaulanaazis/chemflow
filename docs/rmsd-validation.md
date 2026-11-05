@@ -2,6 +2,74 @@
 
 Implementasi: `chemflow.docking.rmsd_validation.RedockingValidator`.
 
+## Otomatis: BIOVIA dengan fallback RDKit
+
+Validasi RMSD aktif secara bawaan pada run baru. Backend `auto` mencoba
+BIOVIA Discovery Studio pada Windows dengan dependensi otomasi lengkap.
+Jika clipboard tidak cocok, otomasi memakai satu berkas script. Jika aplikasi
+tidak ada, lisensi/startup gagal, atau kalkulasi tidak menghasilkan nilai yang
+valid, perhitungan RDKit yang ada tetap dipakai. Satu kegagalan sesi BIOVIA menonaktifkan percobaan GUI
+untuk sisa pose pada run itu, sehingga tidak terjadi timeout berulang.
+
+```bash
+chemflow run --ligands ligan.xlsx --receptors reseptor.xlsx --output hasil
+chemflow run --ligands ligan.xlsx --receptors reseptor.xlsx --output hasil --rmsd-backend rdkit
+chemflow run --ligands ligan.xlsx --receptors reseptor.xlsx --output hasil --no-rmsd-overlay
+chemflow run --ligands ligan.xlsx --receptors reseptor.xlsx --output hasil --no-run-rmsd-validation
+chemflow resume --output hasil --run-rmsd-validation --rmsd-backend auto
+```
+
+Backend RMSD independen dari `--similarity`/`--no-similarity`. Opsi tersebut
+tetap mengatur ekspor interaksi dan analisis similaritas. Checkpoint lama
+mempertahankan pilihan `run_rmsd_validation` yang tersimpan; gunakan override
+pada `resume` untuk mengubahnya.
+
+Setiap pose memiliki direktori
+`rmsd/molecules/<reseptor>/<native>_repXX_modeXX/`, berisi:
+
+- `native_crystal.sdf`: koordinat ligan kristal asli, tanpa minimisasi.
+- `docked.sdf`: koordinat pose setelah docking.
+- `pair.sdf`: kedua molekul sebagai dua record terpisah, siap dibuka sekaligus.
+- `atom_mapping.json`: pemetaan lengkap atom berat dan asal koordinat.
+- `biovia_rmsd.pl` dan `biovia_result.tsv`, bila BIOVIA dicoba.
+- `biovia_overlay_<token>.png`, bila ekspor visualisasi BIOVIA berhasil.
+
+**`ligands/NATIVE_…/*.pdb` adalah hasil preparasi SMILES untuk input docking,
+bukan referensi kristal RMSD.** Konformasi ini dibuat dekat titik asal, sehingga
+terlihat jauh jika ditampilkan bersama pose docking di koordinat reseptor.
+Gunakan `pair.sdf` atau `native_crystal.sdf` untuk perbandingan.
+
+Molekul dipetakan berdasarkan graf kimia penuh dan simetri, termasuk
+oksigen ekuivalen pada gugus fosfat/karboksilat. Urutan atom disamakan tanpa
+rotasi, translasi, alignment, atau perubahan posisi atom. Pemetaan parsial
+dan pemetaan yang tidak mereproduksi `CalcRMS` ditolak untuk jalur BIOVIA.
+
+Otomasi memakai API DiscoveryScript resmi `CalculateHeavyAtomRmsd`.
+Script membentuk dua molekul di memori; jalur utama menempelkan script ke
+Script Window lewat clipboard, memverifikasi isi editor, lalu menjalankannya.
+Jika tidak didukung antarmuka versi yang terpasang, satu berkas script
+dijalankan oleh client. Kedua jalur tidak membutuhkan dua dialog Open.
+`SaveImage` mengekspor tampilan asli BIOVIA (native sian, docked jingga),
+sehingga tidak bergantung pada screenshot desktop yang bisa tertutup jendela
+lain. Ekspor gambar gagal tidak membatalkan angka RMSD yang sudah sah.
+
+Sheet `Validasi RMSD` dan `Hasil Docking` mencatat `metode`, `rmsd_backend`,
+`rdkit_rmsd_angstrom`, `fallback_reason`, jalur pasangan, laporan, dan gambar.
+Metode BIOVIA bernama `BIOVIA_HeavyAtoms`; cadangannya tetap `CalcRMS` atau
+`fallback_greedy`. Hasil BIOVIA ditolak bila tidak finite, negatif, berasal
+dari eksekusi lama, atau berbeda lebih dari 0,002 Å dari pasangan tanpa alignment.
+
+Ringkasan memilih RMSD minimum; `rmsd_affinity_best_angstrom` melaporkan
+RMSD pose berafinitas terbaik secara terpisah. Contoh run lama di `hasil`:
+ATP mode 1 = 2,742 Å, sedangkan minimum berada pada mode 2 = 1,738 Å.
+Keduanya menjawab pertanyaan evaluasi yang berbeda dan tidak boleh tertukar.
+
+Untuk menguji data hasil yang sudah ada tanpa mengubahnya atau mengulang docking:
+
+```bash
+python scripts/verify_rmsd_results.py --source hasil --output output/rmsd-check --backend auto
+```
+
 Kriteria RMSD lebih kecil dari 2.0 Angstrom antara pose redocking dan
 ligan native kristalografi umum dipakai sebagai kriteria "baik" pada
 validasi docking self-docking/redocking. Lihat Hevener et al. 2009,
@@ -87,7 +155,7 @@ nama `NATIVE_<label>`):
 3. Lipinski dan ADMET-nya dihitung (ADMET ikut jalur SMILES unik).
 4. Semuanya masuk ke sheet Excel dan seluruh analitik sebagai grup **Native**
    (`--no-native` mematikannya).
-5. Validasi RMSD (`--run-rmsd-validation`) membaca semua pose hasil docking native itu dan memilih RMSD minimum
+5. Validasi RMSD (aktif secara bawaan) membaca semua pose hasil docking native itu dan memilih RMSD minimum
    (`docking/<kunci>/NATIVE_<label>/`).
 
 Native untuk jalur Excel dipilih dari ligan terdekat dengan pusat kotak, paling jauh
@@ -110,10 +178,12 @@ chemflow interactions --output validasi --rmsd
 ```
 
 `--rmsd-only` mengabaikan input ligan uji dan melewati ADMET/analitik screening.
-`--run-rmsd-validation` menambahkan validasi yang sama pada pipeline penuh.
+Pipeline penuh menjalankan validasi yang sama secara bawaan; `--no-run-rmsd-validation` mematikannya.
 Opsi merge dan interaksi RMSD terpisah dari `--merge-mode` untuk docking utama.
 Keluaran: `rmsd/hasil_rmsd.xlsx`, `rmsd/complexes/`,
 `rmsd/interaction_source/complexes/`, dan `rmsd/interaksi/`.
 `Validasi RMSD` memuat minimum per reseptor, `Hasil Docking` memuat seluruh pose.
 Lihat [panduan versi 2.1.0](../README.md#baru-di-versi-210-validasi-rmsd-mandiri)
 untuk cache Open Babel, resume, dan detail pemilihan pose.
+
+Gambar overlay menampilkan label sian `Sebelum redocking: native kristal`, label oranye `Sesudah redocking: pose hasil docking`, dan nilai RMSD. Label merupakan bagian dari ekspor BIOVIA. Koordinat molekul tetap pada posisi asli.

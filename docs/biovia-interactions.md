@@ -34,7 +34,7 @@ python -m chemflow run --ligands ligan.xlsx --receptors reseptor.xlsx --output h
 
 Setelah tahap analitik, chemflow mengekspor interaksi semua kompleks, lalu menghitung
 similaritas terhadap ligan native (`similaritas_interaksi.xlsx` dan grafik). Bila salah satu
-syarat tidak terpenuhi (mesin bukan Windows, BIOVIA tidak terpasang, atau `--no-native`),
+syarat tidak terpenuhi (mesin bukan Windows, BIOVIA tidak terpasang, atau native dan validasi RMSD sama-sama dimatikan),
 tahap itu dilewati dengan satu baris log yang menyebut penyebabnya, dan run selesai normal.
 
 | Opsi | Efek |
@@ -46,7 +46,8 @@ tahap itu dilewati dengan satu baris log yang menyebut penyebabnya, dan run sele
 Di library, `PipelineConfig.run_similarity` bernilai `None` (otomatis), `True` (paksa), atau
 `False` (matikan), dan `detect_biovia()` mengembalikan jalur executable bila otomasi bisa
 berjalan di mesin itu. Karena membutuhkan referensi native, `--similarity` tidak bisa
-dipadukan dengan `--no-native`.
+dipadukan dengan `--no-native --no-run-rmsd-validation`. Dengan RMSD yang aktif,
+native tetap disiapkan untuk validasi meskipun dikecualikan dari analitik.
 
 ### Ekspor saja
 
@@ -231,3 +232,5 @@ with InputLock(stall_seconds=120) as lock:
   berbeda pada nama kontrol; galatnya menyebut kontrol yang tidak ditemukan.
 - Daftar ligan dicocokkan lewat rantai dan nama residu. Dua ligan pada rantai dan nama yang
   sama tidak dapat dibedakan.
+
+Gambar overlay menampilkan label sian `Sebelum redocking: native kristal`, label oranye `Sesudah redocking: pose hasil docking`, dan nilai RMSD. Label merupakan bagian dari ekspor BIOVIA. Koordinat molekul tetap pada posisi asli.

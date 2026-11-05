@@ -165,8 +165,7 @@ setelah login bagi pengembang klien. Helper API browser menyimpan CSRF di memori
 bootstrap sesi mendapat salinan baru setelah refresh. Jangan pernah menyimpan kata
 sandi di localStorage.
 
-[Token visual](design/webui.md) dan [bukti pengujian](testing-3.0.0.md) terpisah
-dari kontrak ini. Tambahkan fitur sebagai modul fitur; jaga agar primitif bebas
+Tambahkan fitur sebagai modul fitur; jaga agar primitif bebas
 dari pemanggilan API. Perbarui pengujian untuk perubahan siklus hidup/keamanan
 dan gunakan integrasi subproses CLI nyata, bukan hanya mock. CI lintas-OS adalah
 pemeriksaan portabilitas; lulus di Windows lokal saja tidak membuktikan perilaku

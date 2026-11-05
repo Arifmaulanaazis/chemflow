@@ -83,7 +83,9 @@ class PipelineConfig:
     native_match_radius: float = 8.0        # Angstrom, jarak maks pusat gridbox Excel ke pusat native agar dianggap situs yang sama
 
     # Validasi RMSD redocking
-    run_rmsd_validation: bool = False
+    run_rmsd_validation: bool = True
+    rmsd_backend: str = "auto"             # BIOVIA bila tersedia, fallback otomatis ke RDKit
+    rmsd_overlay: bool = True               # ekspor tampilan asli BIOVIA; tidak dibuat pada fallback RDKit
     rmsd_only: bool = False
     rmsd_merge_mode: str = "best"
     rmsd_interaction_mode: str = "best"
@@ -184,6 +186,8 @@ class PipelineConfig:
         for name in ("rmsd_merge_mode", "rmsd_interaction_mode"):
             if getattr(self, name) not in ("best", "all"):
                 raise ValueError(f"{name} harus 'best' atau 'all'.")
+        if self.rmsd_backend not in ("auto", "rdkit"):
+            raise ValueError("rmsd_backend harus 'auto' atau 'rdkit'.")
         if self.rmsd_threshold_good <= 0 or self.rmsd_threshold_acceptable < self.rmsd_threshold_good:
             raise ValueError("Ambang RMSD harus positif dan acceptable >= good.")
         if not self.rmsd_only and (self.ligand_excel is None or not self.ligand_excel.exists()):

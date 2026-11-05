@@ -153,3 +153,26 @@ def test_rmsd_only_partial_missing_native_fails(make_pipeline, monkeypatch):
     monkeypatch.setattr(pipe, '_run_rmsd_validation', lambda *a: [{'rmsd_angstrom': .5}])
     monkeypatch.setattr(pipe, '_merge_rmsd_poses', lambda *a: None)
     assert pipe.run() == 1
+
+
+def test_affinity_best_rmsd_remains_missing_when_that_pose_failed(make_pipeline, tmp_path, monkeypatch):
+    pipe = make_pipeline()
+    pipe._natives = [_native_entry()]
+    mols = [_fake_ligand_mol(), _fake_ligand_mol()]
+    mols[1].SetBoolProp('valid_rmsd', True)
+    monkeypatch.setattr(pm, 'read_pdbqt', lambda *a, **kw: mols)
+
+    class Validator:
+        def __init__(self, *a, **kw): pass
+        def validate(self, block, mol, label):
+            valid = mol.HasProp('valid_rmsd')
+            return SimpleNamespace(rmsd=.5 if valid else None, status='good' if valid else 'gagal',
+                                   method='test', note='')
+
+    monkeypatch.setattr(pm, 'RedockingValidator', Validator)
+    run = DockingRunResult('NATIVE_N3_A1', 'R1', 1, 42,
+                           poses=[{'mode': 1, 'affinity': -10.}, {'mode': 2, 'affinity': -8.}],
+                           output_pdbqt=tmp_path / 'rep1.pdbqt')
+    best = pipe._run_rmsd_validation(_context('R1'), [run])[0]
+    assert best['mode'] == 2 and best['rmsd_angstrom'] == .5
+    assert best['affinity_best_mode'] == 1 and best['rmsd_affinity_best_angstrom'] is None

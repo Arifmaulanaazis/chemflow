@@ -67,7 +67,7 @@ def test_expired_session(logged,app):
 
 def test_schema_tracks_cli(logged):
     s=logged.get('/api/schema').json()
-    assert s['version']=='3.0.0'
+    assert s['version']=='3.1.0'
     assert set(s['commands'])=={'init','run','resume','similarity','gcms','interactions'}
     options=s['commands']['run']
     assert any(o['name']=='rmsd_only' for o in options)

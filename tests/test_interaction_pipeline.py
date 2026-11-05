@@ -46,7 +46,7 @@ def test_mode_otomatis_tanpa_native_tidak_error_hanya_dilewati(inputs):
 
 def test_similarity_butuh_ligan_native(inputs):
     with pytest.raises(ValueError, match="ligan native"):
-        _config(inputs, run_similarity=True, include_native=False)
+        _config(inputs, run_similarity=True, include_native=False, run_rmsd_validation=False)
     _config(inputs, run_similarity=True, include_native=False, run_rmsd_validation=True)
 
 
@@ -139,7 +139,7 @@ def test_otomatis_dilewati_bila_biovia_tidak_terdeteksi(inputs, monkeypatch, cap
 
 def test_otomatis_dilewati_tanpa_native(inputs, monkeypatch, tmp_path):
     _plan(monkeypatch, tmp_path / "DiscoveryStudio2021.exe")
-    assert Pipeline(_config(inputs, include_native=False))._similarity_enabled() is False
+    assert Pipeline(_config(inputs, include_native=False, run_rmsd_validation=False))._similarity_enabled() is False
 
 
 def test_no_similarity_mematikan_walau_biovia_ada(inputs, monkeypatch, tmp_path):

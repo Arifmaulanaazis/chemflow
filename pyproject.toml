@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chemflow"
-version = "3.0.0"
+version = "3.1.0"
 description = "CLI, WebUI dan library: preparasi ligan/reseptor, ADMET, docking AutoDock Vina, merge kompleks, PCA/HCA/heatmap kemometrik, dan analisis GC-MS opsional."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -155,10 +155,26 @@ class LigandPreparer:
     def _embed_3d(self, mol: Any, name: str) -> Any:
         from rdkit.Chem import AllChem
 
-        for params_factory in (AllChem.ETKDGv3, AllChem.ETKDGv2):
+        # Urutan: ETKDG dengan chirality dulu; jika gagal, ulangi dengan
+        # enforceChirality=False sebelum fallback lain (random coords / legacy).
+        for enforce_chirality in (True, False):
+            for params_factory in (AllChem.ETKDGv3, AllChem.ETKDGv2):
+                try:
+                    params = params_factory()
+                    params.randomSeed = 42
+                    params.enforceChirality = enforce_chirality
+                    if AllChem.EmbedMolecule(mol, params) == 0:
+                        if not enforce_chirality:
+                            self._log.warning(f"[{name}] Embed 3D berhasil hanya dengan enforceChirality=False; periksa stereokimia.")
+                        return mol
+                except Exception:
+                    continue
+        for enforce_chirality in (True, False):
             try:
-                params = params_factory()
+                params = AllChem.ETKDGv3()
                 params.randomSeed = 42
+                params.useRandomCoords = True
+                params.enforceChirality = enforce_chirality
                 if AllChem.EmbedMolecule(mol, params) == 0:
                     return mol
             except Exception:

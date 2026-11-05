@@ -148,7 +148,12 @@ def _add_run_subparser(sub: argparse._SubParsersAction) -> None:
                                "'Native' pada semua analitik). Validasi RMSD tetap memakai native.")
 
     g_rmsd = p.add_argument_group("Validasi RMSD redocking")
-    g_rmsd.add_argument("--run-rmsd-validation", action="store_true")
+    g_rmsd.add_argument("--run-rmsd-validation", action=argparse.BooleanOptionalAction, default=True,
+                        help="Validasi native aktif secara bawaan; --no-run-rmsd-validation mematikannya.")
+    g_rmsd.add_argument("--rmsd-backend", choices=["auto", "rdkit"], default="auto",
+                        help="'auto': kalkulasi BIOVIA bila tersedia, fallback RDKit otomatis; 'rdkit': tanpa GUI.")
+    g_rmsd.add_argument("--rmsd-overlay", action=argparse.BooleanOptionalAction, default=True,
+                        help="Ekspor visualisasi native/docked dari BIOVIA (tanpa mengubah koordinat).")
     g_rmsd.add_argument("--rmsd-only", action="store_true", help="Hanya redock native dan validasi semua pose; --ligands diabaikan.")
     g_rmsd.add_argument("--rmsd-merge-mode", choices=["best", "all"], default="best",
                         help="Merge native berdasarkan RMSD minimum atau semua pose (terpisah dari --merge-mode).")
@@ -239,6 +244,10 @@ def _add_resume_subparser(sub: argparse._SubParsersAction) -> None:
                    help="Ganti path executable Vina (bila lokasinya berubah sejak run asli).")
     p.add_argument("--biovia-exe", type=Path, default=None,
                    help="Ganti path DiscoveryStudio<tahun>.exe (bila lokasinya berubah sejak run asli).")
+    p.add_argument("--run-rmsd-validation", action=argparse.BooleanOptionalAction, default=None,
+                   help="Aktifkan/matikan RMSD saat resume; default mengikuti checkpoint.")
+    p.add_argument("--rmsd-backend", choices=["auto", "rdkit"], default=None)
+    p.add_argument("--rmsd-overlay", action=argparse.BooleanOptionalAction, default=None)
 
 
 def _add_interactions_subparser(sub: argparse._SubParsersAction) -> None:
@@ -441,6 +450,7 @@ def _run_pipeline(args: argparse.Namespace) -> int:
         rmsd_only=args.rmsd_only, rmsd_merge_mode=args.rmsd_merge_mode,
         rmsd_interaction_mode=args.rmsd_interaction_mode,
         run_rmsd_validation=args.run_rmsd_validation, rmsd_threshold_good=args.rmsd_threshold_good,
+        rmsd_backend=args.rmsd_backend, rmsd_overlay=args.rmsd_overlay,
         rmsd_threshold_acceptable=args.rmsd_threshold_acceptable,
         openbabel_path=args.openbabel_path,
         run_admet=not args.no_admet, admet_file=args.admet_file,
@@ -489,6 +499,9 @@ def _run_resume(args: argparse.Namespace) -> int:
         config.vina_executable = Path(args.vina_executable).resolve()
     if args.biovia_exe is not None:
         config.biovia_exe = Path(args.biovia_exe).resolve()
+    for field in ("run_rmsd_validation", "rmsd_backend", "rmsd_overlay"):
+        if getattr(args, field, None) is not None:
+            setattr(config, field, getattr(args, field))
 
     progress = state.read_progress()
     if progress.get("finished"):

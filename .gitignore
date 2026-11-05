@@ -49,3 +49,22 @@ venv/
 .DS_Store
 Thumbs.db
 npm-debug.log*
+
+# Artefak perantara dan dependensi pembuatan dokumen
+/tmp/
+/output/
+/.codex-finalizer/
+
+# Cache dan data sementara pembuatan grafik
+.chart-data-*/
+/tmp/
+
+# Preprint: hanya PDF jadi yang dilacak; data, skrip, dan berkas penyusun diabaikan
+/preprint/*
+!/preprint/chemflow_preprint.pdf
+
+# Berkas desain internal (tidak terhapus dari disk)
+/docs/design/
+
+# Skrip pembuat materi rilis 3.1
+/scripts/build_release_3_1_*

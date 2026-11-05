@@ -102,9 +102,9 @@ def test_real_venv_install_probe_atomic_activation_and_launch(updater,tmp_path,m
     assert updater.state()['status']=='ready'
     value=subprocess.check_output([str(executable),'-I','-m','chemflow'],timeout=30).decode().strip()
     assert value=='9.9.9'
-    # Aktivasi memilih runtime bertahap; versi sumber/lingkungan tetap 3.0.0.
+    # Aktivasi memilih runtime bertahap; versi sumber/lingkungan tetap 3.1.0.
     import chemflow
-    assert chemflow.__version__=='3.0.0'
+    assert chemflow.__version__=='3.1.0'
 
 
 def test_failed_stage_removes_only_unpublished_runtime(updater, monkeypatch):

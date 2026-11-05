@@ -37,7 +37,7 @@ class RmsdValidationResult:
     ligand_label: str
     rmsd: Optional[float]
     status: str            # "good" | "acceptable" | "poor" | "gagal"
-    method: str             # "CalcRMS" | "fallback_greedy" | "gagal"
+    method: str             # "BIOVIA_HeavyAtoms" | "CalcRMS" | "fallback_greedy" | "gagal"
     note: str = ""
 
 

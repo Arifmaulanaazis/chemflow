@@ -90,7 +90,7 @@ class BioviaClient:
         self._launched_here = False
         self._hwnd: Optional[int] = None
         self._window: Any = None
-        self._opened: Dict[str, Tuple[str, Path]] = {}   # basis -> (nama tab unik, folder salinan)
+        self._opened: Dict[str, Tuple[str, Optional[Path]]] = {}   # basis -> (nama tab unik, folder salinan)
         self._last_dialog = ""
 
     # ------------------------------------------------------------------ sesi
@@ -117,7 +117,10 @@ class BioviaClient:
             self._discard_copies()
             return
         try:
-            self._rt.win32gui.PostMessage(self._hwnd, _WM_CLOSE, 0, 0)
+            windows = self._top_windows() if self._hwnd is None else []
+            hwnd = self._hwnd or (windows[0][0] if windows else None)
+            if hwnd is not None:
+                self._rt.win32gui.PostMessage(hwnd, _WM_CLOSE, 0, 0)
             self._dismiss_prompts(timeout=3.0)
             deadline = time.monotonic() + 10
             while self.is_alive() and time.monotonic() < deadline:
@@ -130,7 +133,8 @@ class BioviaClient:
 
     def _discard_copies(self) -> None:
         for _, folder in self._opened.values():
-            shutil.rmtree(folder, ignore_errors=True)
+            if folder is not None:
+                shutil.rmtree(folder, ignore_errors=True)
         self._opened.clear()
 
     def recover(self) -> None:
@@ -194,6 +198,9 @@ class BioviaClient:
             self._pid = pid
             if not self._rt.psutil.pid_exists(pid):
                 pid = self._find_pid() or pid    # instance lama mengambil alih peluncuran
+                self._pid = pid
+            if self._rt.psutil.pid_exists(pid):
+                self._created = self._rt.psutil.Process(pid).create_time()
             windows = self._top_windows()
             for hwnd, title, _ in windows:
                 if title == "BIOVIA Discovery Studio" and self._launched_here:
@@ -215,8 +222,11 @@ class BioviaClient:
         message, detail = "", ""
         try:
             dialog = self._rt.Application(backend="uia").connect(handle=hwnd).window(handle=hwnd)
-            message = " ".join(c.window_text() for c in dialog.descendants(control_type="Text")
+            texts = dialog.descendants(control_type="Text")
+            message = " ".join(c.window_text() for c in texts
                                if c.element_info.automation_id.endswith("m_messageCtrl"))
+            if not message:
+                message = " ".join(c.window_text() for c in texts)
             more = dialog.child_window(title="More", control_type="Button")
             if more.exists(timeout=0.5):
                 more.invoke()
@@ -226,6 +236,8 @@ class BioviaClient:
         except Exception:
             self._log.debug("Teks dialog BIOVIA tidak terbaca.", exc_info=True)
         if "licens" not in (message + detail).lower():
+            if any(fragment in message.lower() for fragment in ("cannot create directory", "permission denied")):
+                raise BioviaError(f"BIOVIA tidak dapat dimulai: {message}")
             return
         try:
             self._rt.psutil.Process(self._pid).kill()
