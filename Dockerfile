@@ -14,6 +14,8 @@ COPY chemflow ./chemflow
 COPY --from=frontend /chemflow/web/static ./chemflow/web/static
 RUN pip install --no-cache-dir ".[web]" && useradd --create-home --uid 10001 chemflow && mkdir /data && chown chemflow /data
 USER chemflow
+# Bake AutoDock Vina into the image so docking works offline, out of the box.
+RUN python -c "from chemflow.docking.vina_manager import VinaReleaseManager; print(VinaReleaseManager().resolve())"
 ENV MPLBACKEND=Agg PYTHONUNBUFFERED=1
 VOLUME ["/data"]
 EXPOSE 8000
