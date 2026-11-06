@@ -1,9 +1,5 @@
 # Riwayat Perubahan
 
-## Belum dirilis
-
-- Preprint baru (bahasa Inggris) di `paper/chemflow_preprint.pdf`; bibliografi ber-DOI diverifikasi ke Crossref. Preprint lama dihapus.
-
 ## 3.1.0
 
 - Validasi RMSD redocking aktif secara bawaan (`run_rmsd_validation=True`, `rmsd_backend="auto"`, `rmsd_overlay=True`).
