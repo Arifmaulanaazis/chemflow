@@ -30,7 +30,7 @@ chemflow dapat dijalankan lewat WebUI, baris perintah, atau library Python. Masu
 | Lingkungan | Python 3.10+; Node.js 22 hanya untuk membangun ulang frontend |
 | Komponen | RDKit, Open Babel, AutoDock Vina, ADMETLab 3.0 |
 | Materi | [Slide](chemflow.pptx) dan [dokumen PDF](chemflow.pdf) |
-| Preprint | [PDF](paper/chemflow_preprint.pdf) (bahasa Inggris) |
+| Preprint | [PDF](paper/chemflow_preprint.pdf) (bahasa Inggris); [cara mengutip](#cara-mengutip) |
 | Lisensi dan penulis | [MIT](LICENSE); Arif Maulana Azis ([@Arifmaulanaazis](https://github.com/Arifmaulanaazis)) |
 
 Dokumentasi teknis per tahap ada di [docs/](docs/README.md). Riwayat versi ada di [CHANGELOG](CHANGELOG.md).
@@ -260,7 +260,7 @@ Konfigurasi dibaca kembali dari `_state/`, dan tahap yang sudah selesai tidak di
 
 Ligan kokristal yang paling dekat dengan pusat gridbox (maksimal 8 Å) diekstrak, di-*redock* dengan parameter yang sama seperti ligan uji, lalu dimasukkan sebagai grup **Native** pada semua analisis.
 
-RMSD dihitung antara seluruh pose redocking dan koordinat kristal asli tanpa superposisi. Pose dengan RMSD ≤ 2,0 Å dianggap valid. Di Windows, backend `auto` memakai BIOVIA dan menghasilkan gambar overlay (sian: native kristal, oranye: pose docking); jika BIOVIA tidak tersedia atau gagal, perhitungan memakai RDKit dan alasannya dicatat. Workbook memisahkan RMSD minimum semua pose dari RMSD pose berafinitas terbaik. Rincian ada di [docs/rmsd-validation.md](docs/rmsd-validation.md).
+RMSD dihitung antara seluruh pose redocking dan koordinat kristal asli tanpa superposisi. Pose dengan RMSD < 2,0 Å digolongkan baik (2,0 sampai < 3,0 Å dapat diterima). Di Windows, backend `auto` memakai BIOVIA dan menghasilkan gambar overlay (sian: native kristal, oranye: pose docking); jika BIOVIA tidak tersedia atau gagal, perhitungan memakai RDKit dan alasannya dicatat. Workbook memisahkan RMSD minimum semua pose dari RMSD pose berafinitas terbaik. Rincian ada di [docs/rmsd-validation.md](docs/rmsd-validation.md).
 
 ### 5.3 Validasi RMSD mandiri
 
@@ -438,13 +438,54 @@ pytest tests/ -v
 
 Pengujian berjalan lokal dengan data sintetis, tanpa koneksi internet, Open Babel, maupun Vina.
 
+## Cara mengutip
+
+Jika ChemFlow dipakai dalam penelitian, kutip preprint-nya dan sebutkan versi perangkat lunak yang digunakan (`python -c "import chemflow; print(chemflow.__version__)"`). GitHub juga menyediakan tombol **Cite this repository** di halaman repositori, yang membaca berkas [CITATION.cff](CITATION.cff).
+
+**Teks (APA 7)**
+
+> Azis, A. M. (2026). *ChemFlow: An auditable workflow for docking-based virtual screening with redocking validation and chemometric analysis* (Preprint v1.0) [Preprint]. https://github.com/Arifmaulanaazis/chemflow
+
+**Teks (IEEE)**
+
+> A. M. Azis, "ChemFlow: An auditable workflow for docking-based virtual screening with redocking validation and chemometric analysis," preprint v1.0, Nov. 2026. [Online]. Available: https://github.com/Arifmaulanaazis/chemflow
+
+**BibTeX**
+
+```bibtex
+@misc{azis2026chemflow,
+  author       = {Azis, Arif Maulana},
+  title        = {{ChemFlow}: An Auditable Workflow for Docking-Based Virtual Screening with Redocking Validation and Chemometric Analysis},
+  year         = {2026},
+  month        = nov,
+  note         = {Preprint v1.0, not peer reviewed},
+  howpublished = {\url{https://github.com/Arifmaulanaazis/chemflow}}
+}
+
+@misc{azis2026chemflowsoftware,
+  author       = {Azis, Arif Maulana},
+  title        = {{ChemFlow}: {CLI} and {WebUI} for molecular screening},
+  year         = {2026},
+  note         = {Software, version 3.1.0, MIT License},
+  howpublished = {\url{https://github.com/Arifmaulanaazis/chemflow}}
+}
+```
+
+Dalam dokumen LaTeX, simpan entri di `refs.bib`, muat paket `url` bila kelas dokumen belum memuatnya, lalu kutip dengan `\cite{azis2026chemflow}`. Untuk gaya numerik IEEE, pakai `\bibliographystyle{IEEEtran}` dan `\bibliography{refs}`.
+
+Perintah berikut mencetak sitasi ChemFlow beserta pustaka pendukungnya (Vina, Open Babel, RDKit, ADMETlab, dan lainnya) dalam teks atau BibTeX, dengan versi yang terpasang:
+
+```bash
+python -m chemflow citations --format bibtex
+```
+
 ## Referensi ilmiah
 
 - Lipinski et al. (1997), *Adv. Drug Deliv. Rev.*: Rule of Five.
 - Fu et al. (2024), *Nucleic Acids Res.* 52(W1):W422-W431: ADMETLab 3.0.
 - Morris et al. (2009), *J. Comput. Chem.*: tipe atom AutoDock4 dan format PDBQT.
 - Cornell et al. (1995), *J. Am. Chem. Soc.* 117:5179; Hornak et al. (2006), *Proteins* 65(3):712-725: muatan parsial AMBER.
-- Hevener et al. (2009), *J. Chem. Inf. Model.* 49(2):444-460: kriteria RMSD redocking ≤ 2,0 Å.
+- Hevener et al. (2009), *J. Chem. Inf. Model.* 49(2):444-460: kriteria RMSD redocking (< 2,0 Å baik; 2,0 sampai < 3,0 Å dapat diterima).
 - Pratama, Poerwono, & Siswodihardjo (2021), *Indones. J. Biotechnol.* 26(1):54-60, doi:10.22146/ijbiotech.62194: similaritas interaksi ligan-reseptor.
 - Aghoutane et al. (2023), *Micromachines* 14(3):524, doi:10.3390/mi14030524: konvensi PCA dan analisis GC-MS.
 - Eilers & Boelens (2005), koreksi baseline; Savitzky & Golay (1964), *Anal. Chem.* 36(8):1627-1639; Dieterle et al. (2006), *Anal. Chem.* 78(13):4281-4290, normalisasi PQN; Benjamini & Hochberg (1995), *J. R. Stat. Soc. B* 57(1):289-300, koreksi FDR.

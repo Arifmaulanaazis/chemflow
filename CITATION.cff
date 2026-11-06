@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use ChemFlow, please cite it using the metadata below."
+title: "ChemFlow: An Auditable Workflow for Docking-Based Virtual Screening with Redocking Validation and Chemometric Analysis"
+abstract: >-
+  ChemFlow is an open-source Python workflow that integrates ligand and receptor preparation, AutoDock Vina
+  docking with seeded replicates, redocking validation by in-place heavy-atom RMSD, interaction similarity to
+  the native ligand, ADMET and descriptor summaries, chemometric analysis (PCA, hierarchical clustering) and an
+  optional GC-MS module, behind a command line, a web interface and a Python library.
+type: software
+version: 3.1.0
+authors:
+  - family-names: Azis
+    given-names: Arif Maulana
+    email: titandigitalsoft@gmail.com
+license: MIT
+repository-code: "https://github.com/Arifmaulanaazis/chemflow"
+url: "https://github.com/Arifmaulanaazis/chemflow"
+keywords:
+  - molecular docking
+  - virtual screening
+  - AutoDock Vina
+  - redocking validation
+  - chemometrics
+  - GC-MS
