@@ -43,30 +43,18 @@ htmlcov/
 .venv/
 venv/
 
-# Editor dan OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 npm-debug.log*
-
-# Artefak perantara dan dependensi pembuatan dokumen
 /tmp/
 /output/
 /.codex-finalizer/
-
-# Cache dan data sementara pembuatan grafik
 .chart-data-*/
 /tmp/
-
-# Preprint: hanya PDF jadi di paper/ yang dilacak; sumber, skrip, data, gambar, dan cache build tetap lokal
 /paper/*
-!/paper/chemflow_preprint.pdf
-# Folder lama preprint/ (sisa lokal, tidak dilacak)
-/preprint/
-
-# Berkas desain internal (tidak terhapus dari disk)
+!/paper/chemflow_preprint.pdf/preprint/
 /docs/design/
-
-# Skrip pembuat materi rilis 3.1
 /scripts/build_release_3_1_*
+scripts/
